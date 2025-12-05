@@ -36,8 +36,10 @@ class RunAnywhereAiServiceImpl(private val context: Context) : AiService {
     
     // Model configuration - Using SmolLM2-360M for fast inference
     private val MODEL_ID = "smollm2-360m-instruct-q4"
-    private val MODEL_NAME = "smollm2-360m-instruct-q4_k_m.gguf"
-    private val MODEL_URL = "https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct-GGUF/resolve/main/smollm2-360m-instruct-q4_k_m.gguf"
+    private val MODEL_NAME = "smollm2-360m-instruct-q4_0.gguf"
+
+    // Using smaller Q4_0 quantization (~135MB) for faster download and lower memory
+    private val MODEL_URL = "https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct-GGUF/resolve/main/smollm2-360m-instruct-q4_0.gguf"
     private val MODEL_CHECKSUM = "" // Optional: Add SHA256 if available
     
     // Inference configuration
