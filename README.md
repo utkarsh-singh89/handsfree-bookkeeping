@@ -1,4 +1,4 @@
-# 📚 ShriLekhan:Personal Bill Booking App
+# 📚 ShriLekhan:Personal Book-keeping App
 
 An offline-first Android bookkeeping app designed for small shopkeepers in India with low literacy.
 Features an on-device AI assistant that understands natural language (Hinglish) to record and query
