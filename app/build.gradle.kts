@@ -40,9 +40,26 @@ android {
     buildFeatures {
         compose = true
     }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
+
+    // Support only arm64-v8a since that's all the RunAnywhere AAR provides
+    defaultConfig {
+        ndk {
+            abiFilters.addAll(listOf("arm64-v8a"))
+        }
+    }
 }
 
 dependencies {
+    implementation(files("libs/RunAnywhereKotlinSDK-release.aar"))
+    implementation(files("libs/runanywhere-llm-llamacpp-release.aar"))
     // Core Android
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
