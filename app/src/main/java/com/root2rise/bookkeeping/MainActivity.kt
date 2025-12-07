@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             BookkeepingTheme {
-                HomeScreen(
+                com.root2rise.bookkeeping.ui.navigation.AppNavigation(
                     viewModel = viewModel,
                     onStartVoiceInput = {
                         voiceService.startListening { transcription ->
