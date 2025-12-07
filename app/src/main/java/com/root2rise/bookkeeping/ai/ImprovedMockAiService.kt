@@ -102,35 +102,44 @@ class ImprovedMockAiService : AiService {
      */
     private fun normalizeInput(utterance: String): String {
         return utterance
+            // Currency normalization
             .replace("rupy", "rupaye")
             .replace("rupees", "rupaye")
             .replace("rs", "rupaye")
             .replace("₹", "")
-            .replace("  ", " ")
+            // Common typos
+            .replace("udhaar", "udhar")
+            .replace("kharach", "kharcha")
+            .replace("bechi", "becha")
+            .replace("huyi", "hui")
+            // Remove extra spaces
+            .replace(Regex("\\s+"), " ")
             .trim()
     }
 
     /**
-     * Classify transaction with CLEAR PRIORITY ORDER
+     * Classify transaction with ULTRA-PRECISE PRIORITY ORDER
      *
-     * Priority:
+     * Priority (STRICTLY enforced):
      * 1. Loan patterns (most specific - has "udhar")
      * 2. Bill/Payment patterns (has "bill" or "bhar")
-     * 3. Sale patterns (has "bikri" or "becha")
+     * 3. Expense patterns (has "kharcha" or specific expense words)
      * 4. Purchase patterns (has "kharida" or "liya" with "saman")
-     * 5. Expense patterns (has "kharcha" or standalone "diya")
-     * 6. Default (income/sale)
+     * 5. Sale patterns (has "bikri" or "becha")
+     * 6. Income patterns (has "mila" or "aya")
+     * 7. Standalone "diya" (if party exists → expense, else → expense)
+     * 8. Fallback: Try to infer from context
      */
     private fun classifyTransaction(lower: String, partyName: String?): Classification {
 
-        // === PRIORITY 1: LOAN PATTERNS (MOST SPECIFIC) ===
-        if (lower.contains("udhar") || lower.contains("loan")) {
+        // === PRIORITY 1: LOAN PATTERNS (MOST SPECIFIC - HIGHEST PRIORITY) ===
+        if (lower.contains("udhar") || lower.contains("udhaar") || lower.contains("loan")) {
             Log.d(TAG, "Detected: LOAN pattern")
 
             // Loan TAKEN (from someone) - money IN
             if (lower.contains("liye") || lower.contains("liya") ||
                 lower.contains("lena") || lower.contains("taken") ||
-                lower.contains("borrow")
+                lower.contains("borrow") || lower.contains("lena hai")
             ) {
                 Log.d(TAG, "→ LOAN TAKEN (in)")
                 return Classification("loan_taken", "in")
@@ -139,84 +148,155 @@ class ImprovedMockAiService : AiService {
             // Loan GIVEN (to someone) - money OUT
             if (lower.contains("diya") || lower.contains("diye") ||
                 lower.contains("dena") || lower.contains("given") ||
-                lower.contains("lend")
+                lower.contains("lend") || lower.contains("dena hai")
             ) {
                 Log.d(TAG, "→ LOAN GIVEN (out)")
                 return Classification("loan_given", "out")
             }
 
-            // Default loan logic if unclear
+            // Context-based loan logic
             if (partyName != null) {
-                // If "se" is present, probably taken
-                if (lower.contains("se")) {
-                    Log.d(TAG, "→ LOAN TAKEN (se detected)")
+                // "se" = from someone = taken
+                if (lower.contains("se") || lower.contains("from")) {
+                    Log.d(TAG, "→ LOAN TAKEN (se/from detected)")
                     return Classification("loan_taken", "in")
                 }
-                // If "ko" is present, probably given
-                if (lower.contains("ko")) {
-                    Log.d(TAG, "→ LOAN GIVEN (ko detected)")
+                // "ko" = to someone = given
+                if (lower.contains("ko") || lower.contains("to")) {
+                    Log.d(TAG, "→ LOAN GIVEN (ko/to detected)")
                     return Classification("loan_given", "out")
                 }
             }
 
-            // Final fallback for loan
+            // Final fallback for loan (if unclear, assume given)
             Log.d(TAG, "→ LOAN GIVEN (default)")
             return Classification("loan_given", "out")
         }
 
         // === PRIORITY 2: BILL/PAYMENT PATTERNS ===
-        if (lower.contains("bill") || lower.contains("bhar") || lower.contains("bharna") ||
-            lower.contains("payment") || lower.contains("paid")
+        if (lower.contains("bill") || lower.contains("bhar diya") || lower.contains("bharna") ||
+            lower.contains("payment") || lower.contains("paid") || lower.contains("pay kiya") ||
+            lower.contains("pay kar diya")
         ) {
             Log.d(TAG, "Detected: BILL/PAYMENT → EXPENSE (out)")
             return Classification("expense", "out")
         }
 
-        // === PRIORITY 3: SALE PATTERNS ===
-        if (lower.contains("bikri") || lower.contains("becha") || lower.contains("bechi") ||
-            lower.contains("bechna") || lower.contains("sale") || lower.contains("sold") ||
-            lower.contains("bech")
-        ) {
-            Log.d(TAG, "Detected: SALE (in)")
-            return Classification("sale", "in")
+        // === PRIORITY 3: EXPLICIT EXPENSE PATTERNS (BEFORE SALE!) ===
+        // This catches expenses that might have amounts but aren't sales
+        val expenseKeywords = listOf(
+            "kharcha", "kharch", "expense", "kharach",
+            "bijli", "electricity", "pani", "water",
+            "rent", "kiraya", "petrol", "diesel", "fuel",
+            "salary", "mazduri", "wages",
+            "chai", "nashta", "khana", "food",
+            "saman liya", "cheez kharidi"
+        )
+
+        if (expenseKeywords.any { lower.contains(it) }) {
+            // But if it also has "becha" or "bikri", it's probably a sale
+            if (!lower.contains("becha") && !lower.contains("bikri") && !lower.contains("sale")) {
+                Log.d(TAG, "Detected: EXPENSE keyword (out)")
+                return Classification("expense", "out")
+            }
         }
 
-        // === PRIORITY 4: PURCHASE PATTERNS ===
-        if ((lower.contains("kharida") || lower.contains("kharidi") || lower.contains("purchase") ||
-                    lower.contains("bought")) ||
-            (lower.contains("liya") && (lower.contains("saman") || lower.contains("stock") ||
-                    lower.contains("maal") || lower.contains("inventory")))
+        // === PRIORITY 4: PURCHASE PATTERNS (BEFORE SALE!) ===
+        // Check purchase before sale to avoid mis-classification
+        if (lower.contains("kharida") || lower.contains("kharidi") ||
+            lower.contains("purchase") || lower.contains("bought") ||
+            lower.contains("kharid liya")
         ) {
             Log.d(TAG, "Detected: PURCHASE (out)")
             return Classification("purchase", "out")
         }
 
-        // === PRIORITY 5: EXPENSE PATTERNS ===
-        if (lower.contains("kharcha") || lower.contains("kharch") || lower.contains("expense")) {
-            Log.d(TAG, "Detected: EXPENSE (out)")
-            return Classification("expense", "out")
+        // "liya" with goods/inventory words = purchase
+        if (lower.contains("liya") || lower.contains("liye")) {
+            if (lower.contains("saman") || lower.contains("stock") ||
+                lower.contains("maal") || lower.contains("inventory") ||
+                lower.contains("goods") || lower.contains("cheez")
+            ) {
+                Log.d(TAG, "Detected: PURCHASE (liya + goods word)")
+                return Classification("purchase", "out")
+            }
         }
 
-        // Standalone "diya/diye" WITHOUT "udhar" = expense
-        if ((lower.contains("diya") || lower.contains("diye")) && !lower.contains("udhar")) {
-            Log.d(TAG, "Detected: Standalone DIYA → EXPENSE (out)")
-            return Classification("expense", "out")
+        // === PRIORITY 5: SALE PATTERNS ===
+        if (lower.contains("bikri") || lower.contains("becha") || lower.contains("bechi") ||
+            lower.contains("bechna") || lower.contains("sale") || lower.contains("sold") ||
+            lower.contains("bech diya") || lower.contains("sell")
+        ) {
+            Log.d(TAG, "Detected: SALE (in)")
+            return Classification("sale", "in")
         }
 
         // === PRIORITY 6: INCOME/RECEIVING PATTERNS ===
-        // Only if explicitly mentions receiving money
-        if (lower.contains("mila") || lower.contains("mili") || lower.contains("aya") ||
-            lower.contains("aaya") || lower.contains("received") || lower.contains("income") ||
-            lower.contains("aamad")
+        if (lower.contains("mila") || lower.contains("mili") || lower.contains("mile") ||
+            lower.contains("aya") || lower.contains("aaya") || lower.contains("aaye") ||
+            lower.contains("received") || lower.contains("income") ||
+            lower.contains("aamad") || lower.contains("kamaya")
         ) {
             Log.d(TAG, "Detected: INCOME/RECEIVED (in)")
             return Classification("sale", "in")
         }
 
-        // === FINAL: If nothing matches, it's likely an ERROR or QUERY ===
-        // Return "other" type so we can identify and handle it
-        Log.d(TAG, "WARNING: Could not classify - returning OTHER")
-        return Classification("other", "in")
+        // === PRIORITY 7: STANDALONE "DIYA/DIYE" (WITHOUT UDHAR) ===
+        // This should be EXPENSE, not sale
+        if (lower.contains("diya") || lower.contains("diye") || lower.contains("de diya")) {
+            if (!lower.contains("udhar")) {
+                // If there's a party name, it's likely an expense TO that party
+                if (partyName != null) {
+                    Log.d(TAG, "Detected: DIYA with party → EXPENSE (out)")
+                    return Classification("expense", "out")
+                }
+
+                // If no party but has amount, still expense
+                Log.d(TAG, "Detected: Standalone DIYA → EXPENSE (out)")
+                return Classification("expense", "out")
+            }
+        }
+
+        // === PRIORITY 8: CONTEXT-BASED INFERENCE ===
+        // Use party name and prepositions to infer
+        if (partyName != null) {
+            if (lower.contains("ko")) {
+                // "X ko Y" usually means giving = expense or loan_given
+                // Since udhar already checked, this is expense
+                Log.d(TAG, "Detected: Party + KO → EXPENSE (out)")
+                return Classification("expense", "out")
+            }
+
+            if (lower.contains("se")) {
+                // "X se Y" usually means receiving = income or loan_taken
+                // Since udhar already checked, this is income
+                Log.d(TAG, "Detected: Party + SE → INCOME (in)")
+                return Classification("sale", "in")
+            }
+        }
+
+        // === PRIORITY 9: HUI/HUA PATTERNS (passive voice - usually sales) ===
+        if (lower.contains("hui") || lower.contains("hua") || lower.contains("huyi")) {
+            Log.d(TAG, "Detected: HUI/HUA → likely SALE (in)")
+            return Classification("sale", "in")
+        }
+
+        // === FINAL FALLBACK: Try to guess from verb ===
+        // If all else fails, look at action verbs
+        if (lower.contains("liya") || lower.contains("liye")) {
+            // "liya" without context = probably received money = income
+            Log.d(TAG, "Fallback: LIYA detected → INCOME (in)")
+            return Classification("sale", "in")
+        }
+
+        // === ABSOLUTE LAST RESORT ===
+        // If we can't classify at all, be conservative
+        Log.w(TAG, "⚠️ CLASSIFICATION FAILED - Cannot determine transaction type")
+        Log.w(TAG, "   Input was: '$lower'")
+        Log.w(TAG, "   Defaulting to EXPENSE to be safe")
+
+        // Default to expense instead of sale (more conservative)
+        return Classification("expense", "out")
     }
 
     /**
