@@ -1,4 +1,4 @@
-# 📚 Bookkeeping Assistant - दुकान का हिसाब
+# 📚 ShriLekhan:Personal Book-keeping App
 
 An offline-first Android bookkeeping app designed for small shopkeepers in India with low literacy.
 Features an on-device AI assistant that understands natural language (Hinglish) to record and query
@@ -58,52 +58,6 @@ com.root2rise.bookkeeping/
 │   │   └── HomeScreen.kt         # Main UI
 │   └── theme/                    # Material Design theme
 └── MainActivity.kt               # Entry point
-```
-
-## 🤖 AI Integration - NOW WITH REAL AI!
-
-### ✨ Google Gemini Pro Integration
-
-The app now uses **real AI** powered by Google's Gemini Pro! This provides:
-
-- **95%+ accuracy** (vs 70% with pattern matching)
-- **True natural language understanding** (not just keyword matching)
-- **Handles any variation** of input
-- **Context-aware** responses
-- **Typo tolerance** and spelling correction
-- **Smart fallback** to MockAiService when offline
-
-**Quick Setup**: Get your free API key from https://makersuite.google.com/app/apikey
-**Full Guide**: See [REAL_AI_SETUP.md](REAL_AI_SETUP.md)
-
-### Transaction Schema
-
-When users describe a transaction, the AI returns:
-
-```json
-{
-  "kind": "transaction",
-  "action": "add_transaction",
-  "direction": "in | out",
-  "type": "sale | purchase | loan_given | loan_taken | expense | other",
-  "party_name": "string or null",
-  "amount": 0,
-  "date": "today | yesterday | yyyy-mm-dd | null",
-  "notes": "string or null"
-}
-```
-
-### Query Schema
-
-When users ask questions, the AI returns:
-
-```json
-{
-  "kind": "query",
-  "action": "query_total_sales | query_total_expenses | query_overall_summary | query_balance",
-  "party_name": "string or null",
-  "time_range": "today | yesterday | this_week | this_month | all | null"
-}
 ```
 
 ## 🚀 Getting Started
