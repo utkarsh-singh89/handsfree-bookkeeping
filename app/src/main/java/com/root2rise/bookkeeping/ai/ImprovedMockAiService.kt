@@ -25,13 +25,17 @@ class ImprovedMockAiService : AiService {
 
     // 1. SALES Keywords (Credit / Money In) - GREEN 🟢
     private val salesKeywords = setOf(
-        // Hinglish/Hindi
+        // Hinglish/Hindi (Latin script)
         "bikri", "bikri hui", "aaj ki bikri", "becha", "bechi",
         "saman becha", "maal becha", "bik gaya", "aamdani",
         "jama hua", "jama", "paisa aaya", "paisa aya",
         "customer ne diya", "customer se mila",
+        // Variations with "ki"
+        "ki bikri", "ki sale", "bikri ki",
         // English
-        "sale", "sold", "revenue", "income", "received", "credited"
+        "sale", "sold", "revenue", "income", "received", "credited",
+        // Common Google STT outputs
+        "biki", "bechi", "bechna", "bech"
     )
 
     // 2. EXPENSE Keywords (Debit / Money Out) - RED 🔴
@@ -52,6 +56,8 @@ class ImprovedMockAiService : AiService {
         // Hinglish/Hindi
         "udhar liya", "udhaar liya", "udhar mila",
         "maine usse udhar liya", "loan liya", "paise liye",
+        "liye udhar", "liye udhaar", "liya udhar", "liya udhaar",
+        "se udhar liya", "se liye udhar", "se liya udhar",
         // English
         "loan taken", "borrowed", "credit received"
     )
@@ -107,12 +113,17 @@ class ImprovedMockAiService : AiService {
     )
 
     override suspend fun processUtterance(utterance: String): String {
-        Log.d(TAG, "Processing: $utterance")
+        Log.d(TAG, "========================================")
+        Log.d(TAG, "🎤 RAW INPUT: $utterance")
+        Log.d(
+            TAG,
+            "🎤 INPUT BYTES: ${utterance.toByteArray().joinToString(" ") { "%02X".format(it) }}"
+        )
 
         val normalized = normalizeInput(utterance)
         val lower = normalized.lowercase().trim()
 
-        Log.d(TAG, "Normalized: $lower")
+        Log.d(TAG, "✅ NORMALIZED: $lower")
 
         // === FIRST: Check if this is a QUERY (not a transaction) ===
         if (isQuery(lower)) {
@@ -211,14 +222,16 @@ class ImprovedMockAiService : AiService {
 
         // === PRIORITY 1: LOAN PATTERNS (TRAINED KEYWORDS) ===
         // Check LOAN TAKEN keywords first
-        if (loanTakenKeywords.any { lower.contains(it) }) {
-            Log.d(TAG, "✅ LOAN TAKEN matched (trained keyword)")
+        val matchedLoanTaken = loanTakenKeywords.find { lower.contains(it) }
+        if (matchedLoanTaken != null) {
+            Log.d(TAG, "✅ LOAN TAKEN matched: '$matchedLoanTaken'")
             return Classification("loan_taken", "in")  // GREEN 🟢
         }
 
         // Check LOAN GIVEN keywords
-        if (loanGivenKeywords.any { lower.contains(it) }) {
-            Log.d(TAG, "✅ LOAN GIVEN matched (trained keyword)")
+        val matchedLoanGiven = loanGivenKeywords.find { lower.contains(it) }
+        if (matchedLoanGiven != null) {
+            Log.d(TAG, "✅ LOAN GIVEN matched: '$matchedLoanGiven'")
             return Classification("loan_given", "out")  // RED 🔴
         }
 
@@ -253,18 +266,26 @@ class ImprovedMockAiService : AiService {
 
         // === PRIORITY 2: EXPENSE PATTERNS (TRAINED KEYWORDS) ===
         // Check expense keywords (kharcha, bill, kiraya, petrol, etc.)
-        if (expenseKeywords.any { lower.contains(it) }) {
+        val matchedExpense = expenseKeywords.find { lower.contains(it) }
+        if (matchedExpense != null) {
             // Make sure it's not a sale that happens to mention expense
-            if (!salesKeywords.any { lower.contains(it) }) {
-                Log.d(TAG, "✅ EXPENSE matched (trained keyword)")
+            val matchedSale = salesKeywords.find { lower.contains(it) }
+            if (matchedSale == null) {
+                Log.d(TAG, "✅ EXPENSE matched: '$matchedExpense'")
                 return Classification("expense", "out")  // RED 🔴
+            } else {
+                Log.d(
+                    TAG,
+                    "⚠️ Both EXPENSE ('$matchedExpense') and SALE ('$matchedSale') matched - choosing SALE"
+                )
             }
         }
 
         // === PRIORITY 3: SALES PATTERNS (TRAINED KEYWORDS) ===
         // Check sales keywords (bikri, becha, aamdani, jama hua, etc.)
-        if (salesKeywords.any { lower.contains(it) }) {
-            Log.d(TAG, "✅ SALE matched (trained keyword)")
+        val matchedSales = salesKeywords.find { lower.contains(it) }
+        if (matchedSales != null) {
+            Log.d(TAG, "✅ SALE matched: '$matchedSales'")
             return Classification("sale", "in")  // GREEN 🟢
         }
 
