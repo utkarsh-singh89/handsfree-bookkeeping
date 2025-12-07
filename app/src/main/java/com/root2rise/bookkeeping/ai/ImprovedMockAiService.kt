@@ -66,13 +66,23 @@ class ImprovedMockAiService : AiService {
     private val profitKeywords = setOf("munafa", "fayda", "profit hua", "net profit", "profit", "gain", "earnings", "मुनाफा", "फायदा")
     private val lossKeywords = setOf("nuksaan", "ghaata", "loss hua", "total loss", "loss", "negative", "deficit", "नुकसान", "घाटा")
 
-    // Simple Hindi number words (extend as needed)
+    // Hindi number words (comprehensive mapping)
     private val hindiNumbers = mapOf(
-        "ek" to 1, "do" to 2, "teen" to 3, "char" to 4, "paanch" to 5, "panch" to 5,
-        "chhe" to 6, "saat" to 7, "aath" to 8, "nau" to 9, "das" to 10,
-        "bees" to 20, "tees" to 30, "chaalees" to 40, "pachaas" to 50,
-        "saath" to 60, "sattar" to 70, "assi" to 80, "nabbe" to 90,
-        "sau" to 100, "hazaar" to 1000, "hajaar" to 1000, "hazaaron" to 1000
+        // 1-10
+        "ek" to 1, "do" to 2, "teen" to 3, "char" to 4,
+        "paanch" to 5, "panch" to 5, "chhe" to 6, "chhah" to 6,
+        "saat" to 7, "aath" to 8, "aat" to 8, "nau" to 9, "das" to 10,
+        // 11-19
+        "gyarah" to 11, "barah" to 12, "terah" to 13, "chaudah" to 14,
+        "pandrah" to 15, "solah" to 16, "satrah" to 17, "atharah" to 18, "unnees" to 19,
+        // Multiples of 10
+        "bees" to 20, "tees" to 30, "chaalees" to 40, "chalees" to 40,
+        "pachaas" to 50, "pachass" to 50, "saath" to 60, "sath" to 60,
+        "sattar" to 70, "assi" to 80, "aasi" to 80, "nabbe" to 90, "nabbey" to 90,
+        // Multipliers (handled separately but included for standalone use)
+        "sau" to 100, "so" to 100,
+        "hazaar" to 1000, "hazar" to 1000, "hajaar" to 1000,
+        "lakh" to 100000, "lac" to 100000, "laakh" to 100000
     )
 
     override suspend fun processUtterance(utterance: String): String {
@@ -272,40 +282,86 @@ class ImprovedMockAiService : AiService {
         return -1
     }
 
-    // Amount extraction: prioritize Arabic digits, fallback to Hindi words
+    // Amount extraction: prioritize Arabic digits, then handle Hindi words with multipliers
     private fun extractAmount(utterance: String): Double {
-        // First: find numbers like 2000, 2,000, 2.5 etc.
+        val lower = utterance.lowercase(Locale.getDefault())
+
+        // STRATEGY 1: Look for "X hazaar/thousand" or "X lakh" patterns FIRST
+        // This handles cases like "2 hazaar", "do hazaar", "1 lakh", "ek lakh"
+
+        // Pattern: [number/word] + [lakh/lac]
+        val lakhPattern =
+            Regex("""(\d+|ek|do|teen|char|paanch|panch|chhe|saat|aath|nau|das)\s*(?:lakh|lac|लाख)""")
+        val lakhMatch = lakhPattern.find(lower)
+        if (lakhMatch != null) {
+            val multiplierStr = lakhMatch.groupValues[1]
+            val multiplier = when {
+                multiplierStr.matches(Regex("""\d+""")) -> multiplierStr.toDoubleOrNull() ?: 1.0
+                hindiNumbers.containsKey(multiplierStr) -> hindiNumbers[multiplierStr]!!.toDouble()
+                else -> 1.0
+            }
+            val result = multiplier * 100000.0
+            Log.d(TAG, "Lakh detected: $multiplierStr lakh = $result")
+            return result
+        }
+
+        // Pattern: [number/word] + [hazaar/hazar/thousand]
+        val hazaarPattern =
+            Regex("""(\d+|ek|do|teen|char|paanch|panch|chhe|saat|aath|nau|das|bees|tees|chaalees|pachaas|saath|sattar|assi|nabbe)\s*(?:hazaar|hazar|hajaar|thousand|हजार)""")
+        val hazaarMatch = hazaarPattern.find(lower)
+        if (hazaarMatch != null) {
+            val multiplierStr = hazaarMatch.groupValues[1]
+            val multiplier = when {
+                multiplierStr.matches(Regex("""\d+""")) -> multiplierStr.toDoubleOrNull() ?: 1.0
+                hindiNumbers.containsKey(multiplierStr) -> hindiNumbers[multiplierStr]!!.toDouble()
+                else -> 1.0
+            }
+            val result = multiplier * 1000.0
+            Log.d(TAG, "Hazaar detected: $multiplierStr hazaar = $result")
+            return result
+        }
+
+        // Pattern: [number/word] + [sau/hundred]
+        val sauPattern =
+            Regex("""(\d+|ek|do|teen|char|paanch|panch|chhe|saat|aath|nau|das)\s*(?:sau|so|hundred|सौ)""")
+        val sauMatch = sauPattern.find(lower)
+        if (sauMatch != null) {
+            val multiplierStr = sauMatch.groupValues[1]
+            val multiplier = when {
+                multiplierStr.matches(Regex("""\d+""")) -> multiplierStr.toDoubleOrNull() ?: 1.0
+                hindiNumbers.containsKey(multiplierStr) -> hindiNumbers[multiplierStr]!!.toDouble()
+                else -> 1.0
+            }
+            val result = multiplier * 100.0
+            Log.d(TAG, "Sau detected: $multiplierStr sau = $result")
+            return result
+        }
+
+        // STRATEGY 2: Look for standalone numbers like "2000", "2,000", "2.5"
         val numericRegex = Regex("""(\d{1,3}(?:[,\s]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)""")
         val numericMatch = numericRegex.find(utterance.replace(",", ""))
         if (numericMatch != null) {
-            return numericMatch.value.replace(Regex("""[,\s]"""), "").toDoubleOrNull() ?: 0.0
+            val result = numericMatch.value.replace(Regex("""[,\s]"""), "").toDoubleOrNull() ?: 0.0
+            Log.d(TAG, "Numeric detected: $result")
+            return result
         }
 
-        // Second: try simple Hindi number words (very basic support)
-        val lower = utterance.lowercase(Locale.getDefault())
+        // STRATEGY 3: Fallback - check for individual Hindi number words
         var total = 0.0
-        // handle "paanch sau" or "do hazaar" by simple heuristics
-        if (lower.contains("sau")) {
-            // e.g., "paanch sau" -> 5 * 100
-            for ((word, valNum) in hindiNumbers) {
-                if (valNum in 1..99 && lower.contains("$word sau")) {
-                    return valNum * 100.0
-                }
-            }
-            return 100.0
-        }
-        if (lower.contains("hazaar") || lower.contains("hajaar")) {
-            for ((word, valNum) in hindiNumbers) {
-                if (valNum in 1..99 && lower.contains("$word hazaar")) {
-                    return valNum * 1000.0
-                }
-            }
-            return 1000.0
-        }
         hindiNumbers.forEach { (word, value) ->
-            if (lower.contains(word)) total += value
+            if (lower.contains(word)) {
+                total += value
+                Log.d(TAG, "Hindi word detected: $word = $value")
+            }
         }
-        return if (total > 0) total else 0.0
+
+        return if (total > 0) {
+            Log.d(TAG, "Total from Hindi words: $total")
+            total
+        } else {
+            Log.w(TAG, "⚠️ No amount found, defaulting to 0")
+            0.0
+        }
     }
 
     // Party extraction: Unicode-aware patterns, returns null if none
