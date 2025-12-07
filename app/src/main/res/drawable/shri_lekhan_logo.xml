@@ -1,0 +1,12 @@
+<!-- Placeholder for Shri Lekhan Logo -->
+<!-- Replace this file with your actual logo: shri_lekhan_logo.png -->
+<!-- Logo features: "श्री" text with peacock feather and pen nib -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+    <path
+        android:fillColor="#4169E1"
+        android:pathData="M60,10 L110,35 L110,85 L60,110 L10,85 L10,35 Z" />
+</vector>

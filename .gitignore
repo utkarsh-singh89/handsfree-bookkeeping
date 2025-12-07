@@ -7,6 +7,7 @@
 /.idea/workspace.xml
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
+/.idea/ChatHistory_schema_v3.xml
 .DS_Store
 /build
 /captures
@@ -15,3 +16,21 @@
 local.properties
 # Ignore all GGUF model files
 app/src/main/assets/models/*.gguf
+
+# IDE files
+.idea/
+*.iml
+*.iws
+
+# Gradle files
+.gradle/
+build/
+
+# Local configuration file
+local.properties
+
+# Log files
+*.log
+
+# Android Studio generated files
+captures/
