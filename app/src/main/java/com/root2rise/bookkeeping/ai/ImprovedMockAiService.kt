@@ -1,146 +1,99 @@
 package com.root2rise.bookkeeping.ai
 
 import android.util.Log
+import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.*
+import kotlin.math.abs
 
 /**
- * Improved Mock AI Service with Profit & Loss trained keywords
+ * ImprovedMockAiService - Option A (fixed & improved)
  *
- * Trained with comprehensive Hinglish + English keywords:
- * 1. SALES (bikri, becha, sale, sold, aamdani, jama hua)
- * 2. EXPENSE (kharcha, bill, kiraya, rent, payment)
- * 3. LOAN TAKEN (udhar liya, loan liya, borrowed)
- * 4. LOAN GIVEN (udhar diya, loan diya, lent)
- * 5. PROFIT/LOSS (analytical, not transactions)
- * 6. QUERY (kitna, batao, how much, summary)
- *
- * Color logic: GREEN (in) = Credit/Money In, RED (out) = Debit/Money Out
- * Expected accuracy: 96%+ with trained keywords
- * Response time: < 20ms
+ * - Keyword based classifier for: sale, expense, loan_taken, loan_given, profit, loss, other
+ * - Supports Hinglish (Latin) and common Hindi words (Devanagari)
+ * - Returns transaction or query JSON compatible with your app
+ * - Adds "ui_color" field ("green" or "red") for direct UI use
  */
 class ImprovedMockAiService : AiService {
-
     private val TAG = "ImprovedMockAI"
 
-    // ===== TRAINED KEYWORD SETS (Profit & Loss Categories) =====
-
-    // 1. SALES Keywords (Credit / Money In) - GREEN 🟢
+    // --- Keyword sets (Hinglish, English, common Hindi words) ---
     private val salesKeywords = setOf(
-        // Hinglish/Hindi (Latin script)
-        "bikri", "bikri hui", "aaj ki bikri", "becha", "bechi",
-        "saman becha", "maal becha", "bik gaya", "aamdani",
-        "jama hua", "jama", "paisa aaya", "paisa aya",
-        "customer ne diya", "customer se mila",
-        // Variations with "ki"
-        "ki bikri", "ki sale", "bikri ki",
-        // English
-        "sale", "sold", "revenue", "income", "received", "credited",
-        // Common Google STT outputs
-        "biki", "bechi", "bechna", "bech"
+        // Latin / Hinglish
+        "bikri", "bikri hui", "becha", "bechi", "bik gaya", "aamdani", "jama hua", "jama",
+        "paisa aaya", "paisa aya", "customer ne diya", "sale", "sold", "revenue", "income", "received",
+        // Devanagari
+        "बिक्री", "बेचा", "आयी", "आया", "आया है"
     )
 
-    // 2. EXPENSE Keywords (Debit / Money Out) - RED 🔴
     private val expenseKeywords = setOf(
-        // Hinglish/Hindi
-        "kharcha", "kharch", "paisa kharch hua", "bill bhar diya",
-        "bijli bill", "bijli ka bill", "electricity bill",
-        "kiraya", "rent", "tanki bharai", "petrol", "diesel",
-        "recharge", "kharida", "khareeda", "saman liya",
-        "payment kiya", "bill bhara",
-        // English
-        "expense", "paid", "payment done", "spend", "spent",
-        "cost", "purchase", "bill paid"
+        "kharcha", "kharch", "paisa kharch hua", "bill bhar diya", "bijli bill", "bijli ka bill",
+        "kiraya", "rent", "petrol", "diesel", "recharge", "kharida", "khareeda", "payment kiya",
+        "expense", "paid", "payment", "spent", "cost", "purchase", "bill paid",
+        // Devanagari
+        "खर्च", "खर्चा", "बिल", "किराया", "पेट्रोल", "डीज़ल", "नुकसान"
     )
 
-    // 3. LOAN TAKEN Keywords (Credit / Money In) - GREEN 🟢
     private val loanTakenKeywords = setOf(
-        // Hinglish/Hindi
-        "udhar liya", "udhaar liya", "udhar mila",
-        "maine usse udhar liya", "loan liya", "paise liye",
-        "liye udhar", "liye udhaar", "liya udhar", "liya udhaar",
-        "se udhar liya", "se liye udhar", "se liya udhar",
-        // English
-        "loan taken", "borrowed", "credit received"
+        "udhar liya", "udhaar liya", "udhar mila", "loan liya", "liye udhar", "liye udhaar",
+        "borrowed", "loan taken", "paise liye",
+        // Devanagari
+        "उधार लिया", "लोन लिया", "उधार मिला"
     )
 
-    // 4. LOAN GIVEN Keywords (Debit / Money Out) - RED 🔴
     private val loanGivenKeywords = setOf(
-        // Hinglish/Hindi
-        "udhar diya", "udhaar diya", "maine usko udhar diya",
-        "paise de diye", "loan diya",
-        // English
-        "loan given", "lent", "credit out", "money given"
+        "udhar diya", "udhaar diya", "loan diya", "maine usko udhar diya", "loan given", "lent",
+        // Devanagari
+        "उधार दिया", "लोन दिया"
     )
 
-    // 5. CREDIT Direction Keywords (Money In) - GREEN 🟢
     private val creditKeywords = setOf(
-        "mila", "mile", "jama", "receive", "got",
-        "aaya", "aya", "credited", "paisa aaya"
+        "mila", "mile", "jama", "receive", "got", "aaya", "aya", "credited", "paisa aaya",
+        "मिला", "आया", "जमा"
     )
 
-    // 6. DEBIT Direction Keywords (Money Out) - RED 🔴
     private val debitKeywords = setOf(
-        "bhar diya", "nikal gaya", "payment", "outflow",
-        "de diya", "kharcha kiya"
+        "bhar diya", "nikal gaya", "payment", "outflow", "de diya", "kharcha kiya", "diya", "diye",
+        "दिया", "दिए", "भरा"
     )
 
-    // 7. QUERY Keywords (Not a transaction)
     private val queryKeywords = setOf(
-        // Hinglish/Hindi
-        "kitna", "kitni", "kitna balance", "batao", "bataye",
-        "kya", "aaj ka kitna", "total kitna", "summary",
-        // English
-        "how much", "total", "balance", "show", "summary"
+        "kitna", "kitni", "kitna balance", "batao", "bataye", "kya", "aaj ka kitna", "total kitna",
+        "summary", "how much", "total", "balance", "show", "summary",
+        "कितना", "बताओ", "कुल"
     )
 
-    // 8. PROFIT/LOSS Keywords (Analytical - Not transactions)
-    private val profitKeywords = setOf(
-        "munafa", "fayda", "profit hua", "net profit",
-        "profit", "gain", "earnings"
-    )
+    private val profitKeywords = setOf("munafa", "fayda", "profit hua", "net profit", "profit", "gain", "earnings", "मुनाफा", "फायदा")
+    private val lossKeywords = setOf("nuksaan", "ghaata", "loss hua", "total loss", "loss", "negative", "deficit", "नुकसान", "घाटा")
 
-    private val lossKeywords = setOf(
-        "nuksaan", "ghaata", "loss hua", "total loss",
-        "loss", "negative", "deficit"
-    )
-
-    // Hindi number words
+    // Simple Hindi number words (extend as needed)
     private val hindiNumbers = mapOf(
-        "ek" to 1, "do" to 2, "teen" to 3, "char" to 4, "paanch" to 5,
-        "panch" to 5, "chhe" to 6, "saat" to 7, "aath" to 8, "nau" to 9,
-        "das" to 10, "bees" to 20, "tees" to 30, "chaalees" to 40, "pachaas" to 50,
+        "ek" to 1, "do" to 2, "teen" to 3, "char" to 4, "paanch" to 5, "panch" to 5,
+        "chhe" to 6, "saat" to 7, "aath" to 8, "nau" to 9, "das" to 10,
+        "bees" to 20, "tees" to 30, "chaalees" to 40, "pachaas" to 50,
         "saath" to 60, "sattar" to 70, "assi" to 80, "nabbe" to 90,
-        "sau" to 100, "hazaar" to 1000
+        "sau" to 100, "hazaar" to 1000, "hajaar" to 1000, "hazaaron" to 1000
     )
 
     override suspend fun processUtterance(utterance: String): String {
         Log.d(TAG, "========================================")
         Log.d(TAG, "🎤 RAW INPUT: $utterance")
-        Log.d(
-            TAG,
-            "🎤 INPUT BYTES: ${utterance.toByteArray().joinToString(" ") { "%02X".format(it) }}"
-        )
-
         val normalized = normalizeInput(utterance)
-        val lower = normalized.lowercase().trim()
-
+        val lower = normalized.lowercase(Locale.getDefault()).trim()
         Log.d(TAG, "✅ NORMALIZED: $lower")
 
-        // === FIRST: Check if this is a QUERY (not a transaction) ===
+        // Query detection
         if (isQuery(lower)) {
-            Log.d(TAG, "Detected: QUERY (not a transaction)")
+            Log.d(TAG, "Detected: QUERY")
             return buildQueryResponse(lower, normalized)
         }
 
-        // === SECOND: It's a TRANSACTION ===
-        // Extract amount and party name
+        // Transaction processing
         val amount = extractAmount(normalized)
         val partyName = extractPartyName(normalized)
-
         Log.d(TAG, "Amount: $amount, Party: $partyName")
 
-        // Determine transaction type with CLEAR PRIORITY ORDER
         val classification = classifyTransaction(lower, partyName)
-
         Log.d(TAG, "Classification: ${classification.type}, ${classification.direction}")
 
         return buildTransactionResponse(
@@ -151,447 +104,355 @@ class ImprovedMockAiService : AiService {
         )
     }
 
-    /**
-     * Check if the utterance is a QUERY (asking a question)
-     * Uses trained query keywords
-     */
+    // ----------------- Helpers -----------------
+
     private fun isQuery(lower: String): Boolean {
-        // Check for PROFIT/LOSS analytical queries (not transactions)
-        if (profitKeywords.any { lower.contains(it) } ||
-            lossKeywords.any { lower.contains(it) }) {
-            // But only if it's asking about it, not recording it
-            if (queryKeywords.any { lower.contains(it) }) {
-                Log.d(TAG, "Detected: PROFIT/LOSS query")
-                return true
-            }
-        }
-
-        // Check trained query keywords
-        if (queryKeywords.any { lower.contains(it) }) {
+        // Profit/loss analytical queries
+        if ((profitKeywords.any { lower.contains(it) } || lossKeywords.any { lower.contains(it) }) &&
+            queryKeywords.any { lower.contains(it) }) {
             return true
         }
-
-        // If asking about totals (has "total" + transaction word)
-        if (lower.contains("total") &&
-            (lower.contains("bikri") || lower.contains("kharcha") ||
-                    lower.contains("sales") || lower.contains("expense") ||
-                    lower.contains("profit") || lower.contains("loss"))
-        ) {
-            return true
-        }
-
-        // If ends with question mark
-        if (lower.contains("?")) {
-            return true
-        }
-
+        if (queryKeywords.any { lower.contains(it) }) return true
+        if (lower.contains("total") && (lower.contains("bikri") || lower.contains("kharcha") || lower.contains("sales") || lower.contains("expense") || lower.contains("profit") || lower.contains("loss"))) return true
+        if (lower.contains("?")) return true
         return false
     }
 
-    /**
-     * Normalize input: fix common typos, expand contractions
-     */
     private fun normalizeInput(utterance: String): String {
         return utterance
-            // Currency normalization
-            .replace("rupy", "rupaye")
+            .replace("₹", " ")
+            .replace("rs.", " ")
             .replace("rupees", "rupaye")
-            .replace("rs", "rupaye")
-            .replace("₹", "")
-            // Common typos
+            .replace("rupy", "rupaye")
             .replace("udhaar", "udhar")
-            .replace("kharach", "kharcha")
-            .replace("bechi", "becha")
-            .replace("huyi", "hui")
-            // Remove extra spaces
-            .replace(Regex("\\s+"), " ")
-            .trim()
+            .replace(Regex("\\s+"), " ").trim()
     }
 
-    /**
-     * Classify transaction using TRAINED KEYWORDS (Profit & Loss)
-     *
-     * Priority (based on keyword training):
-     * 1. LOAN patterns (highest priority - most specific)
-     * 2. EXPENSE patterns (kharcha, bill, payment keywords)
-     * 3. SALES patterns (bikri, becha, aamdani keywords)
-     * 4. CREDIT/DEBIT direction keywords
-     * 5. Context-based inference
-     */
+    private data class Classification(val type: String, val direction: String)
+
     private fun classifyTransaction(lower: String, partyName: String?): Classification {
-
-        // === PRIORITY 1: LOAN PATTERNS (TRAINED KEYWORDS) ===
-        // Check LOAN TAKEN keywords first
-        val matchedLoanTaken = loanTakenKeywords.find { lower.contains(it) }
-        if (matchedLoanTaken != null) {
-            Log.d(TAG, "✅ LOAN TAKEN matched: '$matchedLoanTaken'")
-            return Classification("loan_taken", "in")  // GREEN 🟢
+        // PRIORITY 1: Loan specific phrases
+        loanTakenKeywords.forEach {
+            if (lower.contains(it)) {
+                Log.d(TAG, "✅ LOAN TAKEN matched: '$it'")
+                return Classification("loan_taken", "in")
+            }
+        }
+        loanGivenKeywords.forEach {
+            if (lower.contains(it)) {
+                Log.d(TAG, "✅ LOAN GIVEN matched: '$it'")
+                return Classification("loan_given", "out")
+            }
         }
 
-        // Check LOAN GIVEN keywords
-        val matchedLoanGiven = loanGivenKeywords.find { lower.contains(it) }
-        if (matchedLoanGiven != null) {
-            Log.d(TAG, "✅ LOAN GIVEN matched: '$matchedLoanGiven'")
-            return Classification("loan_given", "out")  // RED 🔴
-        }
-
-        // Generic "udhar" or "loan" without specific verb
-        if (lower.contains("udhar") || lower.contains("udhaar") || lower.contains("loan")) {
-            Log.d(TAG, "Detected: Generic LOAN pattern")
-
-            // Try to infer from context
+        // Generic "udhar" handling
+        if (lower.contains("udhar") || lower.contains("loan")) {
+            Log.d(TAG, "Detected: Generic LOAN mention")
+            // prefer verb context
+            if (lower.contains("liye") || lower.contains("liya") || lower.contains("mila")) {
+                return Classification("loan_taken", "in")
+            }
+            if (lower.contains("diya") || lower.contains("diye") || lower.contains("de diya")) {
+                return Classification("loan_given", "out")
+            }
+            // preposition heuristics: "X se" => taken, "X ko" => given
             if (partyName != null) {
-                if (lower.contains("se") || lower.contains("from")) {
-                    Log.d(TAG, "→ LOAN TAKEN (se/from + party)")
-                    return Classification("loan_taken", "in")  // GREEN 🟢
+                if (lower.contains(" se ") || lower.contains(" from ")) return Classification("loan_taken", "in")
+                if (lower.contains(" ko ") || lower.contains(" to ")) return Classification("loan_given", "out")
+            }
+            // fallback
+            return Classification("loan_given", "out")
+        }
+
+        // PRIORITY 2: Expense
+        expenseKeywords.forEach {
+            if (lower.contains(it)) {
+                Log.d(TAG, "✅ EXPENSE matched: '$it'")
+                // if sale keywords also present, choose stronger proximity: treat sale if sale keyword near number (but rare)
+                if (salesKeywords.any { s -> lower.contains(s) } && keywordNearNumber(lower, salesKeywords)) {
+                    Log.d(TAG, "⚠️ Both EXPENSE and SALE present; choosing SALE due to proximity")
+                    return Classification("sale", "in")
                 }
-                if (lower.contains("ko") || lower.contains("to")) {
-                    Log.d(TAG, "→ LOAN GIVEN (ko/to + party)")
-                    return Classification("loan_given", "out")  // RED 🔴
-                }
-            }
-
-            // Check verb patterns
-            if (lower.contains("liye") || lower.contains("liya") || lower.contains("lena")) {
-                return Classification("loan_taken", "in")  // GREEN 🟢
-            }
-            if (lower.contains("diya") || lower.contains("diye") || lower.contains("dena")) {
-                return Classification("loan_given", "out")  // RED 🔴
-            }
-
-            // Default loan fallback
-            Log.d(TAG, "→ LOAN GIVEN (default)")
-            return Classification("loan_given", "out")  // RED 🔴
-        }
-
-        // === PRIORITY 2: EXPENSE PATTERNS (TRAINED KEYWORDS) ===
-        // Check expense keywords (kharcha, bill, kiraya, petrol, etc.)
-        val matchedExpense = expenseKeywords.find { lower.contains(it) }
-        if (matchedExpense != null) {
-            // Make sure it's not a sale that happens to mention expense
-            val matchedSale = salesKeywords.find { lower.contains(it) }
-            if (matchedSale == null) {
-                Log.d(TAG, "✅ EXPENSE matched: '$matchedExpense'")
-                return Classification("expense", "out")  // RED 🔴
-            } else {
-                Log.d(
-                    TAG,
-                    "⚠️ Both EXPENSE ('$matchedExpense') and SALE ('$matchedSale') matched - choosing SALE"
-                )
+                return Classification("expense", "out")
             }
         }
 
-        // === PRIORITY 3: SALES PATTERNS (TRAINED KEYWORDS) ===
-        // Check sales keywords (bikri, becha, aamdani, jama hua, etc.)
-        val matchedSales = salesKeywords.find { lower.contains(it) }
-        if (matchedSales != null) {
-            Log.d(TAG, "✅ SALE matched: '$matchedSales'")
-            return Classification("sale", "in")  // GREEN 🟢
+        // PRIORITY 3: Sale
+        salesKeywords.forEach {
+            if (lower.contains(it)) {
+                Log.d(TAG, "✅ SALE matched: '$it'")
+                return Classification("sale", "in")
+            }
         }
 
-        // === PRIORITY 4: CREDIT DIRECTION KEYWORDS ===
-        // Check if money is coming IN (mila, aya, jama, got, received)
+        // PRIORITY 4: Credit / Debit verbs
         if (creditKeywords.any { lower.contains(it) }) {
-            Log.d(TAG, "✅ CREDIT direction matched (money IN)")
-            return Classification("sale", "in")  // GREEN 🟢
+            Log.d(TAG, "✅ CREDIT verb matched")
+            return Classification("sale", "in")
         }
-
-        // === PRIORITY 5: DEBIT DIRECTION KEYWORDS ===
-        // Check if money is going OUT (diya, bhar diya, payment, nikal gaya)
         if (debitKeywords.any { lower.contains(it) }) {
-            // But exclude "udhar" cases (already handled above)
-            if (!lower.contains("udhar") && !lower.contains("loan")) {
-                Log.d(TAG, "✅ DEBIT direction matched (money OUT)")
-                return Classification("expense", "out")  // RED 🔴
-            }
+            Log.d(TAG, "✅ DEBIT verb matched")
+            return Classification("expense", "out")
         }
 
-        // === PRIORITY 6: STANDALONE VERB PATTERNS ===
-        // "diya" or "diye" without udhar = EXPENSE
+        // PRIORITY 5: Verb heuristics
         if ((lower.contains("diya") || lower.contains("diye") || lower.contains("de diya")) &&
-            !lower.contains("udhar") && !lower.contains("loan")
-        ) {
-            Log.d(TAG, "Detected: Standalone DIYA → EXPENSE")
-            return Classification("expense", "out")  // RED 🔴
+            !lower.contains("udhar") && !lower.contains("loan")) {
+            Log.d(TAG, "Detected: DIYA -> EXPENSE")
+            return Classification("expense", "out")
+        }
+        if ((lower.contains("liya") || lower.contains("liye") || lower.contains("mila")) &&
+            !lower.contains("udhar") && !lower.contains("loan")) {
+            Log.d(TAG, "Detected: LIYA -> INCOME")
+            return Classification("sale", "in")
         }
 
-        // "liya" or "liye" without udhar or saman = INCOME
-        if ((lower.contains("liya") || lower.contains("liye")) &&
-            !lower.contains("udhar") && !lower.contains("loan") &&
-            !lower.contains("saman") && !lower.contains("stock") && !lower.contains("maal")
-        ) {
-            Log.d(TAG, "Detected: Standalone LIYA → INCOME")
-            return Classification("sale", "in")  // GREEN 🟢
-        }
-
-        // === PRIORITY 7: CONTEXT-BASED INFERENCE (Party + Preposition) ===
+        // CONTEXT: party + preposition
         if (partyName != null) {
-            if (lower.contains("ko")) {
-                // "X ko Y" = giving = expense (if not loan)
-                Log.d(TAG, "Context: Party + KO → EXPENSE")
-                return Classification("expense", "out")  // RED 🔴
+            if (lower.contains(" ko ") || lower.contains(" को ")) {
+                Log.d(TAG, "Context: 'ko' with party -> EXPENSE")
+                return Classification("expense", "out")
             }
-
-            if (lower.contains("se")) {
-                // "X se Y" = receiving = income (if not loan)
-                Log.d(TAG, "Context: Party + SE → INCOME")
-                return Classification("sale", "in")  // GREEN 🟢
+            if (lower.contains(" se ") || lower.contains(" से ")) {
+                Log.d(TAG, "Context: 'se' with party -> INCOME")
+                return Classification("sale", "in")
             }
         }
 
-        // === PRIORITY 8: PASSIVE VOICE PATTERNS ===
-        // "hui" or "hua" usually indicates sales
-        if (lower.contains("hui") || lower.contains("hua") || lower.contains("huyi")) {
-            Log.d(TAG, "Detected: HUI/HUA → likely SALE")
-            return Classification("sale", "in")  // GREEN 🟢
+        // Passive forms often indicate sale (e.g., "bik gayi", "hui")
+        if (lower.contains("hui") || lower.contains("hua") || lower.contains("huyi") || lower.contains("हुई") || lower.contains("हुआ")) {
+            Log.d(TAG, "Detected: passive 'hui/hua' -> SALE")
+            return Classification("sale", "in")
         }
 
-        // === ABSOLUTE LAST RESORT: CONSERVATIVE FALLBACK ===
-        Log.w(TAG, "⚠️ CLASSIFICATION FAILED - No keyword match")
-        Log.w(TAG, "   Input: '$lower'")
-        Log.w(TAG, "   Defaulting to EXPENSE (conservative)")
+        // If profit/loss terms present but not query (rare), treat as summary
+        if (profitKeywords.any { lower.contains(it) }) return Classification("profit", "in")
+        if (lossKeywords.any { lower.contains(it) }) return Classification("loss", "out")
 
-        // Default to expense (safer than defaulting to sale)
-        return Classification("expense", "out")  // RED 🔴
+        // FALLBACK: conservative -> expense/out/red
+        Log.w(TAG, "⚠️ CLASSIFICATION FAILED - No keyword match, defaulting to EXPENSE/OUT")
+        return Classification("expense", "out")
     }
 
-    /**
-     * Extract amount with Hindi number support
-     */
+    // Check if any keyword from list appears near a number token
+    private fun keywordNearNumber(text: String, keywords: Set<String>, window: Int = 3): Boolean {
+        val tokens = text.split(Regex("\\s+"))
+        val numberIndices = tokens.mapIndexedNotNull { i, t ->
+            if (Regex("""\d+(\.\d+)?""").containsMatchIn(t)) i else null
+        }
+        if (numberIndices.isEmpty()) return false
+        for (kw in keywords) {
+            val kwTokens = kw.split(Regex("\\s+"))
+            val pos = indexOfPhrase(tokens, kwTokens)
+            if (pos >= 0) {
+                if (numberIndices.any { ni -> kotlin.math.abs(ni - pos) <= window }) return true
+            } else {
+                // check token contains as fallback
+                tokens.forEachIndexed { i, t ->
+                    if (t.contains(kw)) {
+                        if (numberIndices.any { ni -> kotlin.math.abs(ni - i) <= window }) return true
+                    }
+                }
+            }
+        }
+        return false
+    }
+
+    private fun indexOfPhrase(tokens: List<String>, phraseTokens: List<String>): Int {
+        if (phraseTokens.isEmpty()) return -1
+        for (i in 0..(tokens.size - phraseTokens.size)) {
+            var match = true
+            for (j in phraseTokens.indices) {
+                if (!tokens[i + j].contains(phraseTokens[j])) {
+                    match = false; break
+                }
+            }
+            if (match) return i
+        }
+        return -1
+    }
+
+    // Amount extraction: prioritize Arabic digits, fallback to Hindi words
     private fun extractAmount(utterance: String): Double {
-        // Try numeric extraction first
-        val numericRegex = Regex("""(\d+(?:\.\d+)?)""")
-        val numericMatch = numericRegex.find(utterance)
+        // First: find numbers like 2000, 2,000, 2.5 etc.
+        val numericRegex = Regex("""(\d{1,3}(?:[,\s]\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?)""")
+        val numericMatch = numericRegex.find(utterance.replace(",", ""))
         if (numericMatch != null) {
-            return numericMatch.value.toDoubleOrNull() ?: 0.0
+            return numericMatch.value.replace(Regex("""[,\s]"""), "").toDoubleOrNull() ?: 0.0
         }
 
-        // Try Hindi numbers
-        val lower = utterance.lowercase()
+        // Second: try simple Hindi number words (very basic support)
+        val lower = utterance.lowercase(Locale.getDefault())
         var total = 0.0
-
-        // Handle combinations like "paanch sau" (500)
+        // handle "paanch sau" or "do hazaar" by simple heuristics
         if (lower.contains("sau")) {
-            // Find multiplier before "sau"
-            val multiplier = hindiNumbers.entries.find {
-                lower.contains(it.key) && it.value in 1..99
+            // e.g., "paanch sau" -> 5 * 100
+            for ((word, valNum) in hindiNumbers) {
+                if (valNum in 1..99 && lower.contains("$word sau")) {
+                    return valNum * 100.0
+                }
             }
-            if (multiplier != null) {
-                total = multiplier.value * 100.0
-                Log.d(TAG, "Hindi number: ${multiplier.key} sau = $total")
-                return total
-            }
-            // Just "sau" = 100
             return 100.0
         }
-
-        // Handle "hazaar"
-        if (lower.contains("hazaar")) {
-            val multiplier = hindiNumbers.entries.find {
-                lower.contains(it.key) && it.value in 1..99
-            }
-            if (multiplier != null) {
-                total = multiplier.value * 1000.0
-                Log.d(TAG, "Hindi number: ${multiplier.key} hazaar = $total")
-                return total
+        if (lower.contains("hazaar") || lower.contains("hajaar")) {
+            for ((word, valNum) in hindiNumbers) {
+                if (valNum in 1..99 && lower.contains("$word hazaar")) {
+                    return valNum * 1000.0
+                }
             }
             return 1000.0
         }
-
-        // Look for individual Hindi number words
-        for ((word, value) in hindiNumbers) {
-            if (lower.contains(word)) {
-                total += value
-                Log.d(TAG, "Hindi number: $word = $value")
-            }
+        hindiNumbers.forEach { (word, value) ->
+            if (lower.contains(word)) total += value
         }
-
         return if (total > 0) total else 0.0
     }
 
-    /**
-     * Extract party name with better heuristics
-     */
+    // Party extraction: Unicode-aware patterns, returns null if none
     private fun extractPartyName(utterance: String): String? {
-        // Pattern 1: "X se Y liye" → X is party (loan from)
-        val fromPattern = Regex("""(\w+)\s+se\s+""", RegexOption.IGNORE_CASE)
-        val fromMatch = fromPattern.find(utterance)
-        if (fromMatch != null) {
-            val name = fromMatch.groupValues[1]
-            if (!isCommonWord(name.lowercase())) {
-                Log.d(TAG, "Party name (se): $name")
-                return name.capitalize()
+        // Pattern1: "<name> se" or "<name> se " (from)
+        val sePattern = Regex("""([\p{L}\p{N}._-]{2,})\s+(?:se|से)\b""", RegexOption.IGNORE_CASE)
+        val seMatch = sePattern.find(utterance)
+        if (seMatch != null) {
+            val name = seMatch.groupValues[1]
+            if (!isCommonWord(name.lowercase(Locale.getDefault()))) {
+                return name.capitalizeWords()
             }
         }
-
-        // Pattern 2: "X ko Y diya" → X is party (loan to / sale to)
-        val toPattern = Regex("""(\w+)\s+ko\s+""", RegexOption.IGNORE_CASE)
-        val toMatch = toPattern.find(utterance)
-        if (toMatch != null) {
-            val name = toMatch.groupValues[1]
-            if (!isCommonWord(name.lowercase())) {
-                Log.d(TAG, "Party name (ko): $name")
-                return name.capitalize()
+        // Pattern2: "<name> ko" (to)
+        val koPattern = Regex("""([\p{L}\p{N}._-]{2,})\s+(?:ko|को)\b""", RegexOption.IGNORE_CASE)
+        val koMatch = koPattern.find(utterance)
+        if (koMatch != null) {
+            val name = koMatch.groupValues[1]
+            if (!isCommonWord(name.lowercase(Locale.getDefault()))) {
+                return name.capitalizeWords()
             }
         }
-
-        // Pattern 3: "X ka balance" → X is party (query)
-        val balancePattern = Regex("""(\w+)\s+ka\s+""", RegexOption.IGNORE_CASE)
-        val balanceMatch = balancePattern.find(utterance)
-        if (balanceMatch != null) {
-            val name = balanceMatch.groupValues[1]
-            if (!isCommonWord(name.lowercase())) {
-                Log.d(TAG, "Party name (ka): $name")
-                return name.capitalize()
+        // Pattern3: "<name> ka" (possessive, often used in balance queries)
+        val kaPattern = Regex("""([\p{L}\p{N}._-]{2,})\s+(?:ka|का)\b""", RegexOption.IGNORE_CASE)
+        val kaMatch = kaPattern.find(utterance)
+        if (kaMatch != null) {
+            val name = kaMatch.groupValues[1]
+            if (!isCommonWord(name.lowercase(Locale.getDefault()))) {
+                return name.capitalizeWords()
             }
         }
-
         return null
     }
 
-    /**
-     * Check if word is a common word (not a name)
-     */
+    private fun String.capitalizeWords(): String {
+        return this.split(Regex("\\s+")).joinToString(" ") { it.replaceFirstChar { ch -> if (ch.isLowerCase()) ch.titlecase(Locale.getDefault()) else ch.toString() } }
+    }
+
     private fun isCommonWord(word: String): Boolean {
         val commonWords = setOf(
-            "aaj", "kal", "parso", "bijli", "chai", "pani", "bill", "rent",
-            "saman", "maal", "stock", "kitna", "kitni", "total", "overall",
-            "bikri", "kharcha", "udhar", "rupaye", "paisa", "maine", "mujhe",
-            "usko", "isko", "unko", "inko", "kharida", "diya", "liya", "becha"
+            "aaj", "kal", "parso", "bijli", "chai", "pani", "bill", "rent", "saman", "maal", "stock",
+            "kitna", "kitni", "total", "overall", "bikri", "kharcha", "udhar", "rupaye", "paisa",
+            "maine", "mujhe", "usko", "isko", "unko", "inko", "kharida", "diya", "liya", "becha"
         )
         return commonWords.contains(word)
     }
 
-    /**
-     * Build QUERY JSON response
-     */
+    // Query JSON builder
     private fun buildQueryResponse(lower: String, original: String): String {
-        // Determine query type
         val (action, partyName, timeRange) = when {
-            // Balance with party
-            lower.contains("ka balance") || lower.contains("ka kitna") -> {
-                val party = extractPartyName(original)
-                Triple("query_balance", party, null)
+            lower.contains("ka balance") || (lower.contains("ka") && lower.contains("balance")) || lower.contains("ka kitna") -> {
+                val p = extractPartyName(original)
+                Triple("query_balance", p, null)
             }
-
-            // Total sales
             lower.contains("bikri") || lower.contains("sale") -> {
-                val time = extractTimeRange(lower)
-                Triple("query_total_sales", null, time)
+                val t = extractTimeRange(lower)
+                Triple("query_total_sales", null, t)
             }
-
-            // Total expenses
             lower.contains("kharcha") || lower.contains("expense") -> {
-                val time = extractTimeRange(lower)
-                Triple("query_total_expenses", null, time)
+                val t = extractTimeRange(lower)
+                Triple("query_total_expenses", null, t)
             }
-
-            // Overall summary
-            lower.contains("overall") || lower.contains("summary") || lower.contains("profit") -> {
-                Triple("query_overall_summary", null, "all")
-            }
-
-            else -> {
-                Triple("query_overall_summary", null, "all")
-            }
+            lower.contains("profit") || lower.contains("munafa") -> Triple("query_profit", null, extractTimeRange(lower))
+            lower.contains("loss") || lower.contains("nuksaan") -> Triple("query_loss", null, extractTimeRange(lower))
+            else -> Triple("query_overall_summary", null, extractTimeRange(lower))
         }
 
-        val json = """
-            {
-                "kind": "query",
-                "action": "$action",
-                "party_name": ${partyName?.let { "\"$it\"" } ?: "null"},
-                "time_range": ${timeRange?.let { "\"$it\"" } ?: "null"}
-            }
-        """.trimIndent()
-
+        val obj = JSONObject()
+        obj.put("kind", "query")
+        obj.put("action", action)
+        obj.put("party_name", partyName ?: JSONObject.NULL)
+        obj.put("time_range", timeRange ?: JSONObject.NULL)
+        val json = obj.toString()
         Log.d(TAG, "Generated QUERY JSON: $json")
         return json
     }
 
-    /**
-     * Extract time range from query
-     */
-    private fun extractTimeRange(lower: String): String {
+    private fun extractTimeRange(lower: String): String? {
         return when {
             lower.contains("aaj") || lower.contains("today") -> "today"
             lower.contains("kal") && !lower.contains("baad") -> "yesterday"
-            lower.contains("week") || lower.contains("hafte") -> "this_week"
-            lower.contains("month") || lower.contains("mahine") -> "this_month"
+            lower.contains("hafta") || lower.contains("week") -> "this_week"
+            lower.contains("mahina") || lower.contains("month") || lower.contains("mahine") -> "this_month"
             lower.contains("ab tak") || lower.contains("overall") || lower.contains("total") -> "all"
             else -> "today"
         }
     }
 
-    /**
-     * Build TRANSACTION JSON response
-     */
+    // Transaction JSON builder: adds ui_color (green/red)
     private fun buildTransactionResponse(
         classification: Classification,
         amount: Double,
         partyName: String?,
         originalUtterance: String
     ): String {
+
         val notes = when (classification.type) {
             "loan_taken" -> partyName?.let { "Loan from $it" } ?: "Loan received"
             "loan_given" -> partyName?.let { "Loan to $it" } ?: "Loan given"
             "sale" -> {
+                // Show full description for sales too
                 if (partyName != null) {
-                    "Sale to $partyName"
-                } else if (amount > 0) {
-                    "Sales ₹$amount"
+                    "Sale to $partyName: ${originalUtterance.take(80)}"
                 } else {
-                    "Other income"
+                    // Use original utterance as description
+                    originalUtterance.take(100)
                 }
             }
 
             "expense" -> "Expense: ${extractExpenseType(originalUtterance)}"
-            "purchase" -> "Inventory purchase"
-            "other" -> "Unclassified: $originalUtterance"
-            else -> originalUtterance
+            "purchase" -> "Inventory purchase: ${originalUtterance.take(80)}"
+            "profit" -> "Profit: ${originalUtterance.take(120)}"
+            "loss" -> "Loss: ${originalUtterance.take(120)}"
+            else -> "Unclassified: ${originalUtterance.take(200)}"
         }
 
-        val json = """
-            {
-                "kind": "transaction",
-                "action": "add_transaction",
-                "direction": "${classification.direction}",
-                "type": "${classification.type}",
-                "party_name": ${partyName?.let { "\"$it\"" } ?: "null"},
-                "amount": $amount,
-                "date": "today",
-                "notes": "$notes"
-            }
-        """.trimIndent()
+        val direction = classification.direction
+        val uiColor = if (direction == "in") "green" else "red"
 
+        val obj = JSONObject()
+        obj.put("kind", "transaction")
+        obj.put("action", "add_transaction")
+        obj.put("direction", direction) // "in" or "out"
+        obj.put("type", classification.type)
+        obj.put("party_name", partyName ?: JSONObject.NULL)
+        obj.put("amount", amount)
+        obj.put("date", "today")
+        obj.put("notes", notes)
+        obj.put("ui_color", uiColor) // explicit UI hint
+
+        val json = obj.toString()
         Log.d(TAG, "Generated TRANSACTION JSON: $json")
         return json
     }
 
-    /**
-     * Extract expense type from utterance
-     */
     private fun extractExpenseType(utterance: String): String {
-        val lower = utterance.lowercase()
+        val lower = utterance.lowercase(Locale.getDefault())
         return when {
             lower.contains("bijli") || lower.contains("electricity") -> "Electricity bill"
-            lower.contains("rent") -> "Rent"
+            lower.contains("rent") || lower.contains("kiraya") -> "Rent"
             lower.contains("chai") || lower.contains("tea") -> "Tea/Snacks"
             lower.contains("petrol") || lower.contains("fuel") -> "Fuel"
             lower.contains("salary") || lower.contains("wages") -> "Salary/Wages"
             lower.contains("internet") -> "Internet"
             lower.contains("mobile") || lower.contains("phone") -> "Mobile"
             lower.contains("water") || lower.contains("pani") -> "Water"
-            else -> utterance
+            else -> utterance.take(100)
         }
     }
-
-    private fun String.capitalize(): String {
-        return replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
-    }
-
-    private data class Classification(
-        val type: String,  // sale, purchase, loan_given, loan_taken, expense
-        val direction: String  // in, out
-    )
 }
