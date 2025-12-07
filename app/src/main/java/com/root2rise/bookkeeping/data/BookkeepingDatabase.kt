@@ -23,7 +23,7 @@ interface TransactionDao {
     @Delete
     suspend fun deleteTransaction(transaction: TransactionEntity)
 
-    @Query("SELECT * FROM transactions ORDER BY date DESC")
+    @Query("SELECT * FROM transactions ORDER BY timestamp DESC, id DESC")
     fun getAllTransactions(): Flow<List<TransactionEntity>>
 
     @Query("SELECT SUM(amount) FROM transactions WHERE direction = 'in' AND (:dateFilter IS NULL OR date = :dateFilter)")
