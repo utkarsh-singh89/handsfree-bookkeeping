@@ -13,3 +13,5 @@
 .externalNativeBuild
 .cxx
 local.properties
+# Ignore all GGUF model files
+app/src/main/assets/models/*.gguf
