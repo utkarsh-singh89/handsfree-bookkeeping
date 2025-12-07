@@ -7,9 +7,7 @@ plugins {
 
 android {
     namespace = "com.root2rise.bookkeeping"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.root2rise.bookkeeping"
@@ -65,7 +63,6 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
-//    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
     // Ktor for networking
     implementation("io.ktor:ktor-client-core:3.0.3")

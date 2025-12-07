@@ -2,16 +2,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Required for voice input (speech recognition) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
+    <!-- Required for model download (if ever enabled) -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Legacy permission for older Android versions (not used anymore) -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="28" />
+        android:maxSdkVersion="28"
+        tools:ignore="ScopedStorage" />
 
     <application
         android:name=".BookkeepingApplication"
-        android:largeHeap="true"
         android:allowBackup="true"
+        android:largeHeap="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
