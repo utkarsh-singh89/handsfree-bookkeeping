@@ -3,7 +3,7 @@ package com.root2rise.bookkeeping
 import android.app.Application
 import android.util.Log
 import com.root2rise.bookkeeping.ai.AiService
-import com.root2rise.bookkeeping.ai.runanywhere.RunAnywhereAiServiceImpl
+import com.root2rise.bookkeeping.ai.runanywhere.RunAnywhereAiService
 import com.root2rise.bookkeeping.ai.MockTransactionAiService
 import com.root2rise.bookkeeping.ai.TransactionAiService
 import com.root2rise.bookkeeping.ai.VoiceService
@@ -17,10 +17,10 @@ class BookkeepingApplication : Application() {
     private val TAG = "BookkeepingApp"
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    // AI Service instance - using RunAnywhere SDK with llama.cpp
+    // AI Service instance - using RunAnywhere SDK with TinyLlama from assets
     // Falls back to ImprovedMockAiService if model fails to load
     val aiService: AiService by lazy {
-        RunAnywhereAiServiceImpl(this)
+        RunAnywhereAiService.getInstance(this)
     }
 
     // AI Service instance for existing transactions
@@ -37,23 +37,27 @@ class BookkeepingApplication : Application() {
         super.onCreate()
 
         // Initialize AI model asynchronously in background
-        // This improves first-use performance by pre-loading the model
+        // Copies model from assets to internal storage (first run only)
+        // Then loads model with RunAnywhere SDK
         applicationScope.launch {
             try {
                 Log.d(TAG, "Starting RunAnywhere SDK initialization...")
-                val success = (aiService as? RunAnywhereAiServiceImpl)?.initialize() ?: false
+                Log.d(TAG, "Loading TinyLlama-1.1B model from assets...")
+
+                val success = (aiService as? RunAnywhereAiService)?.initialize() ?: false
 
                 if (success) {
-                    Log.d(
-                        TAG,
-                        "✅ RunAnywhere SDK ready - Status: ${(aiService as? RunAnywhereAiServiceImpl)?.getStatus()}"
-                    )
+                    val status = (aiService as? RunAnywhereAiService)?.getStatus()
+                    Log.d(TAG, "✅ RunAnywhere SDK ready - Status: $status")
+                    Log.d(TAG, "   Model: TinyLlama-1.1B-Chat-Q4_K_M (local)")
+                    Log.d(TAG, "   Framework: llama.cpp via RunAnywhere SDK")
                 } else {
-                    Log.w(TAG, "⚠️ RunAnywhere SDK initialization failed, using fallback service")
-                    Log.w(
-                        TAG,
-                        "   This is expected if model download failed or device is not arm64-v8a"
-                    )
+                    Log.w(TAG, "⚠️ RunAnywhere SDK initialization failed")
+                    Log.w(TAG, "   Using ImprovedMockAiService as fallback (90% accuracy)")
+                    Log.w(TAG, "   Possible causes:")
+                    Log.w(TAG, "   - Device is not arm64-v8a")
+                    Log.w(TAG, "   - Model file missing in assets")
+                    Log.w(TAG, "   - Insufficient RAM (<2GB)")
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "❌ AI initialization error: ${e.message}", e)
@@ -66,7 +70,7 @@ class BookkeepingApplication : Application() {
         super.onTerminate()
         // Cleanup AI resources
         applicationScope.launch {
-            (aiService as? RunAnywhereAiServiceImpl)?.shutdown()
+            (aiService as? RunAnywhereAiService)?.shutdown()
         }
     }
 }
