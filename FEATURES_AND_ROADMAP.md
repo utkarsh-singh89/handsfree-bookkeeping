@@ -1,6 +1,6 @@
 # Features & Roadmap - Bookkeeping Assistant
 
-## ✅ Current Features (v1.0.0)
+## ✅Features
 
 ### 🎤 Natural Language Processing
 
@@ -12,7 +12,7 @@
 - [x] **Amount Extraction**: Finds rupee amounts in text
 - [x] **Party Name Extraction**: Identifies person names
 
-### 💾 Data Management
+### 💾 Data Management(In Process)
 
 - [x] **Local Database**: Room (SQLite) for offline storage
 - [x] **Transaction Types**: 6 types (sale, purchase, loan_given, loan_taken, expense, other)
@@ -23,13 +23,12 @@
 
 ### 🎨 User Interface
 
-- [x] **Material Design 3**: Modern, beautiful UI
 - [x] **Jetpack Compose**: Smooth, declarative UI
 - [x] **Bilingual Headers**: Hindi + English text
 - [x] **Color-coded Transactions**: Green (in) / Red (out)
 - [x] **Transaction Cards**: Visual representation with icons
 - [x] **Quick Action Buttons**: Fast access to common queries
-- [x] **Floating Action Button**: Easy transaction input
+- [x] **Floating Action Button(Mic)**: Easy transaction input
 - [x] **Success/Error Feedback**: Immediate visual confirmation
 - [x] **Scrollable History**: View all past transactions
 
@@ -79,7 +78,7 @@
 
 ## 📋 Planned Features
 
-### Phase 1: Core Enhancements (v1.2.0)
+### Phase 1: Core Enhancements 
 
 #### 🎤 Voice Input
 
@@ -106,7 +105,7 @@
 - [ ] **Sort Options**: By date, amount, type
 - [ ] **Party Filter**: View all transactions with a person
 
-### Phase 2: Advanced Features (v1.3.0)
+### Phase 2: Advanced Features 
 
 #### 💼 Business Management
 
@@ -224,45 +223,6 @@
 - [ ] **CRM**: Customer relationship management
 - [ ] **HR Module**: Staff management
 
-## 📊 Version History
-
-### v1.0.0 (Current - December 2024)
-
-- ✅ Initial release
-- ✅ Basic transaction recording
-- ✅ Query functionality
-- ✅ Offline support
-- ✅ Mock AI service
-- ✅ Material Design 3 UI
-
-### v1.1.0 (Planned - Q1 2025)
-
-- 🔄 Real AI model integration
-- 🔄 Comprehensive testing
-- 🔄 Performance optimization
-- 🔄 Bug fixes
-
-### v1.2.0 (Planned - Q2 2025)
-
-- 📋 Voice input
-- 📋 Analytics & reports
-- 📋 Search & filter
-- 📋 Enhanced UI
-
-### v1.3.0 (Planned - Q3 2025)
-
-- 📋 Customer management
-- 📋 Inventory tracking
-- 📋 Receipt photos
-- 📋 Backup & restore
-
-### v2.0.0 (Planned - Q4 2025)
-
-- 📋 Advanced analytics
-- 📋 Financial management
-- 📋 Export & sharing
-- 📋 Invoice generation
-
 ## 🎯 Priority Matrix
 
 ### High Priority (Must Have)
@@ -325,56 +285,6 @@ We want to hear from you! Please share:
 - **User Stories**: How do you use the app?
 - **Success Stories**: How has it helped you?
 
-### How to Contribute Ideas
-
-1. Open a GitHub Issue
-2. Join our Discord/Telegram
-3. Email: feedback@bookkeeping.app
-4. In-app feedback form (coming soon)
-
-## 📅 Release Schedule
-
-- **Major Releases**: Quarterly (every 3 months)
-- **Minor Updates**: Monthly
-- **Bug Fixes**: As needed (hot fixes)
-- **Beta Program**: Available for early features
-
-## 🎁 Premium Features (Possible Future)
-
-While the core app will always be free, we may offer optional premium features:
-
-### Free Version (Always)
-
-- ✅ All basic transaction recording
-- ✅ Unlimited transactions
-- ✅ Offline functionality
-- ✅ Basic reports
-- ✅ AI assistance
-
-### Premium Version (Optional)
-
-- 💎 Cloud backup & sync
-- 💎 Advanced analytics
-- 💎 Priority support
-- 💎 White-label branding
-- 💎 API access
-- 💎 Multi-store management
-
-**Pricing**: To be determined, likely ₹99-299/month or ₹999/year
-
-## 🌟 Vision
-
-Our vision is to become the **#1 bookkeeping app for small businesses in India**, helping millions
-of shopkeepers manage their finances better, grow their businesses, and achieve financial success.
-
-### Goals
-
-- **Accessibility**: Available to everyone, regardless of literacy or tech skills
-- **Simplicity**: As easy as talking to a friend
-- **Privacy**: Your data is yours, always
-- **Impact**: Save time, reduce errors, increase profits
-
----
 
 **Current Status**: ✅ v1.0.0 Complete and Ready for Use!
 
