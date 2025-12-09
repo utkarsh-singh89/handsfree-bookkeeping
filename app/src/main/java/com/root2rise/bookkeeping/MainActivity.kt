@@ -3,6 +3,8 @@ package com.root2rise.bookkeeping
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -22,9 +24,9 @@ class MainActivity : ComponentActivity() {
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
             if(isGranted) {
-                // Permission is granted. You can now use the microphone.
+                Log.d("MainActivity", "Microphone permission granted")
             } else{
-                // Inform the user that the feature is unavailable.
+                Toast.makeText(this, "Microphone permission is required for voice features", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -71,7 +73,7 @@ class MainActivity : ComponentActivity() {
                 this,
                 Manifest.permission.RECORD_AUDIO
             ) == PackageManager.PERMISSION_GRANTED -> {
-                // Permission is already granted
+                Log.d("MainActivity", "Microphone permission already granted")
             }
             else -> {
                 requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
