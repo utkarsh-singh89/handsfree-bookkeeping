@@ -1,20 +1,53 @@
 package com.root2rise.bookkeeping.ui.screen
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.Assessment
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LocalAtm
+import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.TrendingDown
+import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -24,17 +57,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.Image
 import com.root2rise.bookkeeping.R
 import com.root2rise.bookkeeping.data.TransactionEntity
-import com.root2rise.bookkeeping.ui.components.*
-import com.root2rise.bookkeeping.ui.theme.*
+import com.root2rise.bookkeeping.ui.components.TransactionOptionsDialog
 import com.root2rise.bookkeeping.viewmodel.BookkeepingViewModel
 import com.root2rise.bookkeeping.viewmodel.UiState
 import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     viewModel: BookkeepingViewModel,
@@ -131,7 +161,6 @@ private fun MicFab(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeContent(
     modifier: Modifier = Modifier,
@@ -371,7 +400,7 @@ private fun BalanceCardNew(transactions: List<TransactionEntity>) {
                 )
 
                 Text(
-                    text = "₹${String.format("%,.2f", balance)}",
+                    text = "₹${String.format(Locale.getDefault(), "%,.2f", balance)}",
                     fontSize = 40.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -392,7 +421,7 @@ private fun BalanceCardNew(transactions: List<TransactionEntity>) {
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
-                            text = "₹${String.format("%,.0f", income)}",
+                            text = "₹${String.format(Locale.getDefault(), "%,.0f", income)}",
                             fontSize = 16.sp,
                             color = Color(0xFF4ECCA3),
                             fontWeight = FontWeight.SemiBold
@@ -410,7 +439,7 @@ private fun BalanceCardNew(transactions: List<TransactionEntity>) {
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
-                            text = "₹${String.format("%,.0f", expenses)}",
+                            text = "₹${String.format(Locale.getDefault(), "%,.0f", expenses)}",
                             fontSize = 16.sp,
                             color = Color(0xFFEE6C4D),
                             fontWeight = FontWeight.SemiBold
@@ -583,6 +612,6 @@ private fun formatDate(date: String): String {
 
 private fun String.capitalize(): String {
     return this.split(" ").joinToString(" ") { word ->
-        word.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        word.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
     }
 }

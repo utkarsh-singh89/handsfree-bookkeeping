@@ -2,7 +2,15 @@ package com.root2rise.bookkeeping.ui.components
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,7 +24,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.root2rise.bookkeeping.ui.theme.*
+import com.root2rise.bookkeeping.ui.theme.DarkCard
+import com.root2rise.bookkeeping.ui.theme.TextSecondary
+import com.root2rise.bookkeeping.ui.theme.TextTertiary
+import java.util.Locale
 
 data class BarChartData(
     val label: String,
@@ -121,8 +132,8 @@ fun BarChart(
 
 private fun formatValue(value: Float): String {
     return when {
-        value >= 100000 -> "₹${String.format("%.1f", value / 100000)}L"
-        value >= 1000 -> "₹${String.format("%.1f", value / 1000)}K"
+        value >= 100000 -> "₹${String.format(Locale.getDefault(), "%.1f", value / 100000)}L"
+        value >= 1000 -> "₹${String.format(Locale.getDefault(), "%.1f", value / 1000)}K"
         else -> "₹${value.toInt()}"
     }
 }

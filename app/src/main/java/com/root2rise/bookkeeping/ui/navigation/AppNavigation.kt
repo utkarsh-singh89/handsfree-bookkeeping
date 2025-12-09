@@ -3,15 +3,24 @@ package com.root2rise.bookkeeping.ui.navigation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.root2rise.bookkeeping.data.TransactionEntity
 import com.root2rise.bookkeeping.ui.components.AppBottomNavigation
-import com.root2rise.bookkeeping.ui.screen.*
+import com.root2rise.bookkeeping.ui.screen.DashboardScreen
+import com.root2rise.bookkeeping.ui.screen.LoginScreen
+import com.root2rise.bookkeeping.ui.screen.ProfileScreen
+import com.root2rise.bookkeeping.ui.screen.RegisterScreen
+import com.root2rise.bookkeeping.ui.screen.TransactionsScreen
+import com.root2rise.bookkeeping.ui.screen.WalletScreen
+import com.root2rise.bookkeeping.ui.screen.WelcomeScreen
 import com.root2rise.bookkeeping.viewmodel.BookkeepingViewModel
 
 @Composable
@@ -82,7 +91,6 @@ fun AppNavigation(
 }
 
 @Composable
-@Suppress("UnusedMaterial3ScaffoldPaddingParameter")
 private fun MainAppNavigation(
     viewModel: BookkeepingViewModel,
     onStartVoiceInput: () -> Unit,
@@ -122,8 +130,8 @@ private fun MainAppNavigation(
                 )
             }
         }
-    ) { _ ->
-        Box {
+    ) { innerPadding ->
+        Box(modifier = Modifier.padding(innerPadding)) {
             NavHost(
                 navController = navController,
                 startDestination = Screen.Home.route
