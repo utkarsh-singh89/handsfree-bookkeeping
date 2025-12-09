@@ -2,8 +2,7 @@ package com.root2rise.bookkeeping.ai
 
 import android.util.Log
 import org.json.JSONObject
-import java.text.SimpleDateFormat
-import java.util.*
+import java.util.Locale
 import kotlin.math.abs
 
 /**
@@ -16,7 +15,9 @@ import kotlin.math.abs
  */
 class ImprovedMockAiService : AiService {
 
-    private val TAG = "ImprovedMockAI"
+    companion object {
+        private const val TAG = "ImprovedMockAI"
+    }
 
     // --- Keyword sets (Hinglish, English, common Hindi words) ---
 
