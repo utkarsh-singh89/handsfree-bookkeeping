@@ -1,6 +1,10 @@
 package com.root2rise.bookkeeping.ui.screen
 
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -27,6 +31,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocalAtm
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -82,14 +87,14 @@ fun DashboardScreen(
     val isRecording = uiState is UiState.Processing
 
     Scaffold(
-        containerColor = Color.Transparent,
+        containerColor = Color(0xFF0A1628), // Dark background color
         floatingActionButton = {
             MicFab(
                 isRecording = isRecording,
                 onClick = onStartVoiceInput
             )
         },
-        floatingActionButtonPosition = FabPosition.Center,
+        floatingActionButtonPosition = FabPosition.End, // Move FAB to bottom right
         content = { innerPadding ->
             HomeContent(
                 modifier = Modifier.padding(innerPadding),
@@ -132,15 +137,37 @@ private fun MicFab(
     isRecording: Boolean,
     onClick: () -> Unit
 ) {
-    val scale by animateFloatAsState(
-        targetValue = if (isRecording) 0.5f else 1.0f,
-        label = "mic-scale"
+    // Pulse Animation
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = if (isRecording) 1.2f else 1f, // Scale up if recording
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
     )
+    
+    // Wave Effect (Optional: simplified as a larger transparent circle behind)
+    if (isRecording) {
+        Box(
+            modifier = Modifier
+                .size(100.dp)
+                .graphicsLayer {
+                    scaleX = scale * 1.5f
+                    scaleY = scale * 1.5f
+                    alpha = 0.3f
+                }
+                .background(Color(0xFF4A90E2), CircleShape)
+        )
+    }
 
     FloatingActionButton(
         onClick = onClick,
         modifier = Modifier
             .size(72.dp)
+            .padding(bottom = 16.dp, end = 16.dp)
             .graphicsLayer(
                 scaleX = scale,
                 scaleY = scale
@@ -151,7 +178,8 @@ private fun MicFab(
                 spotColor = Color(0xFF4A90E2).copy(alpha = 0.8f)
             ),
         containerColor = Color(0xFF4A90E2),
-        contentColor = Color.White
+        contentColor = Color.White,
+        shape = CircleShape
     ) {
         Icon(
             imageVector = Icons.Default.Mic,
@@ -170,55 +198,64 @@ private fun HomeContent(
     viewModel: BookkeepingViewModel,
     onTransactionClick: (TransactionEntity) -> Unit
 ) {
-    Box(
+    LazyColumn(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF0A1628))
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            item { Spacer(modifier = Modifier.height(16.dp)) }
-
-            // Top Bar with Logo and Title
-            item {
+        
+        // Top Bar with Logo and Title
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp, horizontal = 0.dp), 
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically // Center vertically to align everything on one centerline
+            ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically, // Align logo and text vertically centered
+                    horizontalArrangement = Arrangement.spacedBy(16.dp) // Maintain 12-16px spacing
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    Image(
+                        painter = painterResource(id = R.drawable.logo),
+                        contentDescription = "ShriLekhan Logo",
+                        modifier = Modifier.size(80.dp) // Slightly reduced from 100 to fit "one unified row" better if needed, but keeping large as requested previously. Let's stick to 80-100. User asked for 3x, let's keep it large but aligned.
+                    )
+
+                    Column(
+                        verticalArrangement = Arrangement.Center
+                        // Removed top padding to align center-to-center with logo
                     ) {
-                        // Logo
-                        Image(
-                            painter = painterResource(id = R.drawable.logo),
-                            contentDescription = "ShriLekhan Logo",
-                            modifier = Modifier.size(80.dp)
+                        Text(
+                            text = "Shrilekhan",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
                         )
-
-                        Column {
-                            Text(
-                                text = "ShriLekhan",
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                            Text(
-                                text = "Your Financial Assistant",
-                                fontSize = 14.sp,
-                                color = Color.White.copy(alpha = 0.6f)
-                            )
-                        }
+                        Text(
+                            text = "Your Financial Assistant",
+                            fontSize = 12.sp,
+                            color = Color.White.copy(alpha = 0.6f)
+                        )
                     }
+                }
 
-                    // Menu Icon
+                // Notification and Menu Icons
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                    // Removed top padding to keep them aligned
+                ) {
+                    IconButton(onClick = { /* TODO: Notifications */ }) {
+                        Icon(
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = "Notifications",
+                            tint = Color.White,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                     IconButton(onClick = { /* TODO: Menu */ }) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
@@ -229,146 +266,193 @@ private fun HomeContent(
                     }
                 }
             }
+        }
 
-            // Current Balance Card
-            item {
-                BalanceCardNew(transactions)
+        // Split Balance Cards (Income & Expense)
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                val income = transactions.filter { it.direction == "in" }.sumOf { it.amount }
+                val expenses = transactions.filter { it.direction == "out" }.sumOf { it.amount }
+
+                // Income Card
+                MiniBalanceCard(
+                    title = "Total Income",
+                    amount = income,
+                    icon = Icons.Default.TrendingUp,
+                    iconColor = Color(0xFF4ECCA3),
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Expense Card
+                MiniBalanceCard(
+                    title = "Total Expenses",
+                    amount = expenses,
+                    icon = Icons.Default.TrendingDown,
+                    iconColor = Color(0xFFEE6C4D),
+                    modifier = Modifier.weight(1f)
+                )
             }
+        }
 
-            // Quick Actions
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text(
-                        text = "Quick Actions",
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
+        // Main Balance Card - "Current Balance"
+        item {
+            MainBalanceCard(transactions)
+        }
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        QuickActionCard(
-                            icon = Icons.Default.TrendingUp,
-                            label = "Sales",
-                            iconColor = Color(0xFF4ECCA3),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            viewModel.processVoiceInput("Show today's sales")
-                        }
-
-                        QuickActionCard(
-                            icon = Icons.Default.TrendingDown,
-                            label = "Expenses",
-                            iconColor = Color(0xFFEE6C4D),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            viewModel.processVoiceInput("Show today's expenses")
-                        }
-
-                        QuickActionCard(
-                            icon = Icons.Default.Assessment,
-                            label = "Summary",
-                            iconColor = Color(0xFF4A90E2),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            viewModel.processVoiceInput("Show overall summary")
-                        }
-                    }
-                }
-            }
-
-            // Response Card (if present)
-            if (lastResponse.isNotEmpty()) {
-                item {
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = Color(0xFF1E3A5F).copy(alpha = 0.6f)
-                        )
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (uiState is UiState.Success)
-                                    Icons.Default.CheckCircle else Icons.Default.Info,
-                                contentDescription = null,
-                                tint = if (uiState is UiState.Success)
-                                    Color(0xFF4ECCA3) else Color(0xFF4A90E2),
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Text(
-                                text = lastResponse,
-                                fontSize = 14.sp,
-                                color = Color.White,
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Recent Transactions
-            item {
+        // Quick Actions
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(
-                    text = "Recent Transactions",
-                    fontSize = 22.sp,
+                    text = "Quick Actions",
+                    fontSize = 20.sp, 
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
-            }
 
-            if (transactions.isEmpty()) {
-                item {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 40.dp),
-                        contentAlignment = Alignment.Center
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    QuickActionCard(
+                        icon = Icons.Default.TrendingUp,
+                        label = "Sales",
+                        iconColor = Color(0xFF4ECCA3),
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Receipt,
-                                contentDescription = null,
-                                modifier = Modifier.size(64.dp),
-                                tint = Color.White.copy(alpha = 0.3f)
-                            )
-                            Text(
-                                text = "No transactions yet",
-                                fontSize = 16.sp,
-                                color = Color.White.copy(alpha = 0.5f)
-                            )
-                        }
+                        viewModel.processVoiceInput("Show today's sales")
+                    }
+
+                    QuickActionCard(
+                        icon = Icons.Default.TrendingDown,
+                        label = "Expenses",
+                        iconColor = Color(0xFFEE6C4D),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        viewModel.processVoiceInput("Show today's expenses")
+                    }
+
+                    QuickActionCard(
+                        icon = Icons.Default.Assessment,
+                        label = "Summary",
+                        iconColor = Color(0xFF4A90E2),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        viewModel.processVoiceInput("Show overall summary")
                     }
                 }
-            } else {
-                items(transactions.take(10), key = { it.id }) { transaction ->
-                    TransactionCardNew(transaction, onTransactionClick)
+            }
+        }
+
+        // Recent Transactions
+        item {
+            Text(
+                text = "Recent Transactions",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
+
+        if (transactions.isEmpty()) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 40.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Receipt,
+                            contentDescription = null,
+                            modifier = Modifier.size(64.dp),
+                            tint = Color.White.copy(alpha = 0.3f)
+                        )
+                        Text(
+                            text = "No transactions yet",
+                            fontSize = 16.sp,
+                            color = Color.White.copy(alpha = 0.5f)
+                        )
+                    }
                 }
             }
+        } else {
+            items(transactions.take(10), key = { it.id }) { transaction ->
+                TransactionCardNew(transaction, onTransactionClick)
+            }
+        }
 
-            item { Spacer(modifier = Modifier.height(100.dp)) }
+        item { Spacer(modifier = Modifier.height(100.dp)) }
+    }
+}
+
+@Composable
+private fun MiniBalanceCard(
+    title: String,
+    amount: Double,
+    icon: ImageVector,
+    iconColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .height(100.dp), 
+        shape = RoundedCornerShape(16.dp), 
+        colors = CardDefaults.cardColors(
+            containerColor = Color(0xFF1E2746) 
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Text(
+                    text = title,
+                    fontSize = 13.sp,
+                    color = Color.White.copy(alpha = 0.7f)
+                )
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Text(
+                text = "₹${String.format(Locale.getDefault(), "%,.0f", amount)}",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
         }
     }
 }
 
 @Composable
-private fun BalanceCardNew(transactions: List<TransactionEntity>) {
+private fun MainBalanceCard(transactions: List<TransactionEntity>) {
     val income = transactions.filter { it.direction == "in" }.sumOf { it.amount }
     val expenses = transactions.filter { it.direction == "out" }.sumOf { it.amount }
     val balance = income - expenses
 
+    // Gradient blue card
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(180.dp),
+            .height(160.dp),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.Transparent
@@ -378,11 +462,10 @@ private fun BalanceCardNew(transactions: List<TransactionEntity>) {
             modifier = Modifier
                 .fillMaxSize()
                 .background(
-                    Brush.horizontalGradient(
+                    Brush.verticalGradient(
                         colors = listOf(
-                            Color(0xFF3B5998),
-                            Color(0xFF4A90E2),
-                            Color(0xFF5BA3F5)
+                            Color(0xFF4A90E2), // Lighter blue top
+                            Color(0xFF3B5998)  // Darker blue bottom
                         )
                     )
                 )
@@ -394,14 +477,13 @@ private fun BalanceCardNew(transactions: List<TransactionEntity>) {
             ) {
                 Text(
                     text = "Current Balance",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontSize = 16.sp,
                     color = Color.White.copy(alpha = 0.9f)
                 )
 
                 Text(
                     text = "₹${String.format(Locale.getDefault(), "%,.2f", balance)}",
-                    fontSize = 40.sp,
+                    fontSize = 36.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
@@ -410,41 +492,19 @@ private fun BalanceCardNew(transactions: List<TransactionEntity>) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowUpward,
-                            contentDescription = null,
-                            tint = Color(0xFF4ECCA3),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = "₹${String.format(Locale.getDefault(), "%,.0f", income)}",
-                            fontSize = 16.sp,
-                            color = Color(0xFF4ECCA3),
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+                    Text(
+                        text = "↑ ₹${String.format(Locale.getDefault(), "%,.0f", income)}",
+                        fontSize = 14.sp,
+                        color = Color(0xFF4ECCA3).copy(alpha = 0.9f), // Brighter green
+                        fontWeight = FontWeight.SemiBold
+                    )
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowDownward,
-                            contentDescription = null,
-                            tint = Color(0xFFEE6C4D),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = "₹${String.format(Locale.getDefault(), "%,.0f", expenses)}",
-                            fontSize = 16.sp,
-                            color = Color(0xFFEE6C4D),
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
+                    Text(
+                        text = "↓ ₹${String.format(Locale.getDefault(), "%,.0f", expenses)}",
+                        fontSize = 14.sp,
+                        color = Color(0xFFEE6C4D).copy(alpha = 0.9f), // Brighter red
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         }
@@ -461,40 +521,33 @@ private fun QuickActionCard(
 ) {
     Card(
         modifier = modifier
-            .height(100.dp)
+            .height(90.dp) // Slightly reduced height
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E3A5F).copy(alpha = 0.4f)
+            containerColor = Color(0xFF1E2746)
         )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(iconColor.copy(alpha = 0.2f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = label,
-                    tint = iconColor,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = iconColor,
+                modifier = Modifier.size(24.dp)
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = label,
-                fontSize = 14.sp,
-                color = Color.White,
+                fontSize = 12.sp,
+                color = Color.White.copy(alpha = 0.9f),
                 fontWeight = FontWeight.Medium
             )
         }
@@ -508,7 +561,7 @@ private fun TransactionCardNew(
 ) {
     val isIncome = transaction.direction == "in"
     val amountColor = if (isIncome) Color(0xFF4ECCA3) else Color(0xFFEE6C4D)
-
+    
     val (icon, iconBg) = when (transaction.type) {
         "sale" -> Icons.Default.ShoppingCart to Color(0xFF4ECCA3)
         "purchase" -> Icons.Default.ShoppingBag to Color(0xFFEE6C4D)
@@ -524,7 +577,7 @@ private fun TransactionCardNew(
             .clickable { onClick(transaction) },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF1E3A5F).copy(alpha = 0.4f)
+            containerColor = Color(0xFF1E2746)
         )
     ) {
         Row(
@@ -539,48 +592,39 @@ private fun TransactionCardNew(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
             ) {
-                // Icon
+                // Icon circle
                 Box(
                     modifier = Modifier
-                        .size(56.dp)
-                        .background(iconBg.copy(alpha = 0.2f), CircleShape),
+                        .size(48.dp)
+                        .background(iconBg.copy(alpha = 0.2f), CircleShape), // Transparent bg for icon
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
                         tint = iconBg,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                 }
 
                 Column {
                     Text(
                         text = transaction.type.replace("_", " ").capitalize(),
-                        fontSize = 18.sp,
+                        fontSize = 16.sp,
                         color = Color.White,
                         fontWeight = FontWeight.SemiBold
                     )
-
-                    transaction.partyName?.let {
+                    
+                    // Added Notes/Description
+                    if (!transaction.notes.isNullOrBlank()) {
                         Text(
-                            text = it,
-                            fontSize = 14.sp,
-                            color = Color.White.copy(alpha = 0.7f)
+                            text = transaction.notes,
+                            fontSize = 13.sp,
+                            color = Color.White.copy(alpha = 0.7f),
+                            maxLines = 1
                         )
                     }
-
-                    transaction.notes?.let { notes ->
-                        if (notes.isNotBlank()) {
-                            Text(
-                                text = notes,
-                                fontSize = 13.sp,
-                                color = Color.White.copy(alpha = 0.5f),
-                                maxLines = 1
-                            )
-                        }
-                    }
-
+                    
                     Text(
                         text = formatDate(transaction.date),
                         fontSize = 12.sp,
@@ -591,7 +635,7 @@ private fun TransactionCardNew(
 
             Text(
                 text = "${if (isIncome) "+" else "-"}₹${transaction.amount.toInt()}",
-                fontSize = 20.sp,
+                fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = amountColor
             )
