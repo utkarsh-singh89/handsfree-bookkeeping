@@ -287,31 +287,7 @@ BUILD SUCCESSFUL in 43s
    Expected: Shows balance, NO new transaction
    ```
 
----
 
-## 🔧 If Still Not Working
-
-### Check:
-
-1. **Is the app updated?**
-   ```bash
-   ./gradlew installDebug
-   ```
-
-2. **Check Logcat for errors:**
-   ```bash
-   adb logcat | grep -E "ImprovedMockAI|AiResponseParser|BookkeepingViewModel"
-   ```
-
-3. **Verify voice transcription:**
-    - Speech might be transcribed incorrectly
-    - Check what text is actually received
-
-4. **Clear app data:**
-    - Settings → Apps → ShreeLekhan → Clear Data
-    - Reinstall
-
----
 
 **The fix is deployed! Test with the cases above.** ✅
 
