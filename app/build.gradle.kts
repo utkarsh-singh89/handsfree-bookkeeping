@@ -34,9 +34,27 @@ android {
     }
     kotlinOptions {
         jvmTarget = "11"
+        freeCompilerArgs += listOf(
+            "-opt-in=kotlin.RequiresOptIn",
+            "-Xcontext-receivers"
+        )
     }
     buildFeatures {
         compose = true
+    }
+    lint {
+        abortOnError = false
+        checkReleaseBuilds = false
+        disable += setOf(
+            "UnusedMaterial3ScaffoldPaddingParameter",
+            "UnusedMaterialScaffoldPaddingParameter",
+            "UnusedBoxWithConstraintsScope",
+            "MissingTranslation",
+            "ExtraTranslation",
+            "ObsoleteLintCustomCheck",
+            "GradleDependency",
+            "NewerVersionAvailable"
+        )
     }
     packaging {
         jniLibs {

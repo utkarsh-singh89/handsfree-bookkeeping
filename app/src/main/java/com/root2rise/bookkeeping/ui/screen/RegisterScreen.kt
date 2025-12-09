@@ -20,6 +20,9 @@ import com.root2rise.bookkeeping.ui.components.GradientBackground
 import com.root2rise.bookkeeping.ui.components.GradientButton
 import com.root2rise.bookkeeping.ui.components.NeonTextField
 import com.root2rise.bookkeeping.ui.theme.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -236,6 +239,7 @@ private fun validateFields(
             password == confirmPassword
 }
 
+@Suppress("UNUSED_PARAMETER")
 private fun performRegister(
     name: String,
     email: String,
@@ -248,8 +252,9 @@ private fun performRegister(
     onLoading(true)
 
     // Simulate registration - Replace with actual API call
-    kotlinx.coroutines.GlobalScope.launch {
-        kotlinx.coroutines.delay(1500)
+    // In production, use name, email, phone, password to register and onError for error handling
+    CoroutineScope(Dispatchers.Main).launch {
+        delay(1500)
         onLoading(false)
         onSuccess()
     }

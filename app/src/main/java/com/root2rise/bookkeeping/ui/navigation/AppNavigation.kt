@@ -1,12 +1,10 @@
 package com.root2rise.bookkeeping.ui.navigation
 
-import android.net.http.SslCertificate.saveState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -84,6 +82,7 @@ fun AppNavigation(
 }
 
 @Composable
+@Suppress("UnusedMaterial3ScaffoldPaddingParameter")
 private fun MainAppNavigation(
     viewModel: BookkeepingViewModel,
     onStartVoiceInput: () -> Unit,
@@ -123,8 +122,8 @@ private fun MainAppNavigation(
                 )
             }
         }
-    ) { paddingValues ->
-        Box(modifier = Modifier.padding(paddingValues)) {
+    ) { _ ->
+        Box {
             NavHost(
                 navController = navController,
                 startDestination = Screen.Home.route

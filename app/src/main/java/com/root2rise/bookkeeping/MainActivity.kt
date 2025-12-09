@@ -10,9 +10,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import com.root2rise.bookkeeping.data.BookkeepingDatabase
-import com.root2rise.bookkeeping.data.TransactionEntity
 import com.root2rise.bookkeeping.repository.BookkeepingRepository
-import com.root2rise.bookkeeping.ui.screen.HomeScreen
 import com.root2rise.bookkeeping.ui.theme.BookkeepingTheme
 import com.root2rise.bookkeeping.viewmodel.BookkeepingViewModel
 import com.root2rise.bookkeeping.viewmodel.BookkeepingViewModelFactory

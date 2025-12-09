@@ -19,6 +19,9 @@ import com.root2rise.bookkeeping.ui.components.GradientBackground
 import com.root2rise.bookkeeping.ui.components.GradientButton
 import com.root2rise.bookkeeping.ui.components.NeonTextField
 import com.root2rise.bookkeeping.ui.theme.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -177,8 +180,8 @@ private fun performLogin(
 
     // Simulate login - Replace with actual authentication
     // For now, accept any non-empty credentials
-    kotlinx.coroutines.GlobalScope.launch {
-        kotlinx.coroutines.delay(1500)
+    CoroutineScope(Dispatchers.Main).launch {
+        delay(1500)
         onLoading(false)
 
         if (email.contains("@") && password.length >= 6) {

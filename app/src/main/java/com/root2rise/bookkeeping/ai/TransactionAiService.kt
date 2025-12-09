@@ -1,8 +1,5 @@
 package com.root2rise.bookkeeping.ai
 
-import java.util.Locale
-import kotlin.math.max
-
 /**
  * Interface for the on-device AI service that processes commands
  * for existing transactions.

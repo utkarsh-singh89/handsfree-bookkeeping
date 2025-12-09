@@ -17,7 +17,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.root2rise.bookkeeping.ui.theme.*
-import kotlin.math.max
 
 data class BarChartData(
     val label: String,
