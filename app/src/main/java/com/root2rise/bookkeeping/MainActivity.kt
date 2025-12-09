@@ -21,9 +21,9 @@ class MainActivity : ComponentActivity() {
 
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-            if (isGranted) {
+            if(isGranted) {
                 // Permission is granted. You can now use the microphone.
-            } else {
+            } else{
                 // Inform the user that the feature is unavailable.
             }
         }
