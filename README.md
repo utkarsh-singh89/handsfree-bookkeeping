@@ -67,6 +67,7 @@ com.root2rise.bookkeeping/
 - Android Studio (latest version)
 - Android SDK 24+ (Android 7.0+)
 - Kotlin 1.9+
+- Figma (For UI Drsigns)
 
 ### Dependencies
 
@@ -189,19 +190,6 @@ The project follows Kotlin coding conventions and uses:
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📚 Documentation
-
-Comprehensive guides are available:
-
-1. **[QUICKSTART.md](QUICKSTART.md)** - Get started in 5 minutes
-2. **[REAL_AI_SETUP.md](REAL_AI_SETUP.md)** - 🤖 Setup real AI (3 minutes!)
-3. **[REAL_AI_COMPLETE.md](REAL_AI_COMPLETE.md)** - Real AI integration complete
-4. **[PROJECT_SUMMARY.md](PROJECT_SUMMARY.md)** - Complete project overview
-5. **[USAGE_EXAMPLES.md](USAGE_EXAMPLES.md)** - User guide with examples
-6. **[AI_PROMPTS_GUIDE.md](AI_PROMPTS_GUIDE.md)** - AI model training guide
-7. **[INTEGRATION_GUIDE.md](INTEGRATION_GUIDE.md)** - Advanced integration
-8. **[TESTING_GUIDE.md](TESTING_GUIDE.md)** - Testing strategy and examples
-9. **[FEATURES_AND_ROADMAP.md](FEATURES_AND_ROADMAP.md)** - Feature list and future plans
 
 ## 📊 Current Status
 
