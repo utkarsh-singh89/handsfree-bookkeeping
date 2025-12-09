@@ -301,14 +301,7 @@ See these files for details:
 
 ---
 
-## 📝 Commits
 
-```
-f353e1e - fix: improve classification (69% → 94%)
-04e5922 - feat: train with P&L keywords (94% → 97%)
-```
-
----
 
 ## ✅ Next Steps
 
